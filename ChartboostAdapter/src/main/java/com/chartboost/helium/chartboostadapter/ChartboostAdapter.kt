@@ -256,7 +256,7 @@ class ChartboostAdapter : PartnerAdapter {
         context: Context,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine {
+        return suspendCoroutine { continuation ->
             val chartboostBanner = Banner(
                 context,
                 request.partnerPlacement,
@@ -275,15 +275,15 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             LogController.d("$TAG failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
-                            Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL))
+                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
-                            Result.success(
+                            continuation.resume(Result.success(
                                 PartnerAd(
                                     ad = event.ad,
                                     details = mapOf(),
                                     request = request
                                 )
-                            )
+                            ))
                         }
                     }
 
