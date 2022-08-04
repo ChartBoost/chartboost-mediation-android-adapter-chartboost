@@ -6,16 +6,18 @@ import android.util.Size
 import com.chartboost.heliumsdk.HeliumSdk
 import com.chartboost.heliumsdk.domain.*
 import com.chartboost.heliumsdk.utils.LogController
-import com.chartboost_helium.sdk.Banner.BannerSize
-import com.chartboost_helium.sdk.Chartboost
-import com.chartboost_helium.sdk.ChartboostBanner
-import com.chartboost_helium.sdk.ChartboostBannerListener
-import com.chartboost_helium.sdk.ChartboostDelegate
-import com.chartboost_helium.sdk.Events.*
-import com.chartboost_helium.sdk.Libraries.CBLogging
-import com.chartboost_helium.sdk.Model.CBError
-import com.chartboost_helium.sdk.Privacy.model.CCPA
-import com.chartboost_helium.sdk.Privacy.model.GDPR
+import com.chartboost.sdk.Chartboost
+import com.chartboost.sdk.LoggingLevel
+import com.chartboost.sdk.Mediation
+import com.chartboost.sdk.ads.Banner
+import com.chartboost.sdk.ads.Interstitial
+import com.chartboost.sdk.ads.Rewarded
+import com.chartboost.sdk.callbacks.BannerCallback
+import com.chartboost.sdk.callbacks.InterstitialCallback
+import com.chartboost.sdk.callbacks.RewardedCallback
+import com.chartboost.sdk.events.*
+import com.chartboost.sdk.privacy.model.CCPA
+import com.chartboost.sdk.privacy.model.GDPR
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -81,28 +83,31 @@ class ChartboostAdapter : PartnerAdapter {
                 // the same app id and app signature, we can pass the app signature to Chartboost
                 // from the Helium SDK.
                 HeliumSdk.getAppSignature()?.let { app_signature ->
-                    Chartboost.setLoggingLevel(CBLogging.Level.ALL)
-                    Chartboost.setMediation(
-                        Chartboost.CBMediation.CBMediationHelium,
-                        partnerSdkVersion,
-                        adapterVersion
-                    )
+                    Chartboost.setLoggingLevel(LoggingLevel.ALL)
 
-                    Chartboost.setDelegate(object : ChartboostDelegate() {
-                        override fun didInitialize() {
+                    Chartboost.startWithAppId(
+                        context.applicationContext,
+                        app_id,
+                        app_signature
+                    ) { startError ->
+
+                        startError?.let {
+                            LogController.e("$TAG Failed to initialize Chartboost SDK: $it")
+                            continuation.resume(
+                                Result.failure(
+                                    HeliumAdException(
+                                        HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                                    )
+                                )
+                            )
+                        } ?: run {
                             continuation.resume(
                                 Result.success(
                                     LogController.i("$TAG Chartboost SDK successfully initialized.")
                                 )
                             )
                         }
-                    })
-
-                    Chartboost.startWithAppId(context.applicationContext, app_id, app_signature)
-
-                    // Deprecated, but much needed for Helium. Needs to be set after SDK Start.
-                    Chartboost.setAutoCacheAds(false)
-
+                    }
                 } ?: run {
                     LogController.e("$TAG Failed to initialize Chartboost SDK: Missing application signature.")
                     continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
@@ -251,60 +256,53 @@ class ChartboostAdapter : PartnerAdapter {
         context: Context,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
-            val chartboostBanner = ChartboostBanner(
+        return suspendCoroutine {
+            val chartboostBanner = Banner(
                 context,
                 request.partnerPlacement,
                 getChartboostAdSize(request.size),
-                null
-            )
-
-            chartboostBanner.setListener(object : ChartboostBannerListener {
-                override fun onAdCached(
-                    cacheEvent: ChartboostCacheEvent?,
-                    cacheError: ChartboostCacheError?
-                ) {
-                    if (cacheError == null) {
-                        continuation.resume(
-                            Result.success(
-                                PartnerAd(
-                                    ad = chartboostBanner,
-                                    details = mapOf(),
-                                    request = request
-                                )
-                            )
-                        )
-                    } else {
-                        LogController.d("$TAG failed to load Chartboost banner ad. Chartboost Error Code: ${cacheError.code}")
-                        continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
-                    }
-                }
-
-                override fun onAdShown(
-                    showEvent: ChartboostShowEvent?,
-                    showError: ChartboostShowError?
-                ) {
-                    // Helium Banners no longer have a show callback.
-                }
-
-                override fun onAdClicked(
-                    clickEvent: ChartboostClickEvent?,
-                    clickError: ChartboostClickError?
-                ) {
-                    if (clickError == null) {
+                object: BannerCallback {
+                    override fun onAdClicked(event: ClickEvent, error: ClickError?) {
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
-                                ad = chartboostBanner,
+                                ad = event.ad,
                                 details = emptyMap(),
                                 request = request
                             )
                         )
                     }
-                }
 
-            })
+                    override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
+                        error?.let {
+                            LogController.d("$TAG failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
+                            Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL))
+                        } ?: run {
+                            Result.success(
+                                PartnerAd(
+                                    ad = event.ad,
+                                    details = mapOf(),
+                                    request = request
+                                )
+                            )
+                        }
+                    }
 
-            chartboostBanner.setAutomaticallyRefreshesContent(false)
+                    override fun onAdRequestedToShow(event: ShowEvent) {}
+
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {}
+
+                    override fun onImpressionRecorded(event: ImpressionEvent) {
+                        partnerAdListener.onPartnerAdImpression(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            )
+                        )
+                    }
+                },
+                setMediation()
+            )
 
             // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
@@ -323,10 +321,10 @@ class ChartboostAdapter : PartnerAdapter {
      * @return The Chartboost ad size that best matches the given [Size].
      */
     private fun getChartboostAdSize(size: Size?) = when (size?.height) {
-        in 50 until 90 -> BannerSize.STANDARD
-        in 90 until 250 -> BannerSize.LEADERBOARD
-        in 250 until DisplayMetrics().heightPixels -> BannerSize.MEDIUM
-        else -> BannerSize.STANDARD
+        in 50 until 90 -> Banner.BannerSize.STANDARD
+        in 90 until 250 -> Banner.BannerSize.LEADERBOARD
+        in 250 until DisplayMetrics().heightPixels -> Banner.BannerSize.MEDIUM
+        else -> Banner.BannerSize.STANDARD
     }
 
     /**
@@ -343,76 +341,70 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
 
         return suspendCoroutine { continuation ->
-            Chartboost.setDelegate(object : ChartboostDelegate() {
-                override fun shouldRequestInterstitial(location: String?): Boolean {
-                    return true
-                }
-
-                override fun shouldDisplayInterstitial(location: String?): Boolean {
-                    return true
-                }
-
-                override fun didCacheInterstitial(location: String?) {
-                    continuation.resume(
-                        Result.success(
+            val chartboostInterstitial = Interstitial(
+                request.partnerPlacement,
+                object : InterstitialCallback {
+                    override fun onAdClicked(event: ClickEvent, error: ClickError?) {
+                        partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
-                                ad = null,
+                                ad = event.ad,
                                 details = emptyMap(),
                                 request = request
                             )
                         )
-                    )
-                }
+                    }
 
-                override fun didFailToLoadInterstitial(
-                    location: String?,
-                    error: CBError.CBImpressionError?
-                ) {
-                    LogController.d("$TAG failed to load Chartboost interstitial ad. Chartboost Error: $error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
-                }
-
-                override fun didDismissInterstitial(location: String?) {
-                    partnerAdListener.onPartnerAdDismissed(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
-                        ), null
-                    )
-                }
-
-                override fun didCloseInterstitial(location: String?) {}
-
-                override fun didClickInterstitial(location: String?) {
-                    partnerAdListener.onPartnerAdClicked(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
+                    override fun onAdDismiss(event: DismissEvent) {
+                        partnerAdListener.onPartnerAdDismissed(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            ), null
                         )
-                    )
-                }
+                    }
 
-                override fun didDisplayInterstitial(location: String?) {
-                    partnerAdListener.onPartnerAdImpression(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
+                    override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
+                        error?.let {
+                            LogController.d("$TAG failed to load Chartboost interstitial ad. Chartboost Error: $error")
+                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                        } ?: run {
+                            continuation.resume(
+                                Result.success(
+                                    PartnerAd(
+                                        ad = event.ad,
+                                        details = emptyMap(),
+                                        request = request
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                    override fun onAdRequestedToShow(event: ShowEvent) {
+                    }
+
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {
+                    }
+
+                    override fun onImpressionRecorded(event: ImpressionEvent) {
+                        partnerAdListener.onPartnerAdDismissed(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            ), null
                         )
-                    )
-                }
-
-                override fun didFailToRecordClick(uri: String?, error: CBError.CBClickError?) {}
-
-            })
+                    }
+                },
+                setMediation()
+            )
 
             // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
-                Chartboost.cacheInterstitial(request.partnerPlacement)
+                chartboostInterstitial.cache()
             } else {
-                Chartboost.cacheInterstitial(request.partnerPlacement, request.adm)
+                chartboostInterstitial.cache(request.adm)
             }
         }
     }
@@ -430,80 +422,79 @@ class ChartboostAdapter : PartnerAdapter {
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
-            Chartboost.setDelegate(object : ChartboostDelegate() {
-                override fun shouldDisplayRewardedVideo(location: String?): Boolean {
-                    return true
-                }
-
-                override fun didCacheRewardedVideo(location: String?) {
-                    continuation.resume(
-                        Result.success(
+            val chartboostRewarded = Rewarded(
+                request.heliumPlacement,
+                object: RewardedCallback {
+                    override fun onAdClicked(event: ClickEvent, error: ClickError?) {
+                        partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
-                                ad = null,
+                                ad = event.ad,
                                 details = emptyMap(),
                                 request = request
                             )
                         )
-                    )
-                }
+                    }
 
-                override fun didFailToLoadRewardedVideo(
-                    location: String?,
-                    error: CBError.CBImpressionError?
-                ) {
-                    LogController.d("$TAG failed to cache Chartboost rewarded ad. Chartboost Error: $error")
-                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
-                }
-
-                override fun didDismissRewardedVideo(location: String?) {
-                    partnerAdListener.onPartnerAdDismissed(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
-                        ), null
-                    )
-                }
-
-                override fun didDisplayRewardedVideo(location: String?) {
-                    partnerAdListener.onPartnerAdImpression(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
+                    override fun onAdDismiss(event: DismissEvent) {
+                        partnerAdListener.onPartnerAdDismissed(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            ), null
                         )
-                    )
-                }
+                    }
 
-                override fun didClickRewardedVideo(location: String?) {
-                    partnerAdListener.onPartnerAdClicked(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
+                    override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
+                        error?.let {
+                            LogController.d("$TAG failed to cache Chartboost rewarded ad. Chartboost Error: $error")
+                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                        } ?: run {
+                            continuation.resume(
+                                Result.success(
+                                    PartnerAd(
+                                        ad = event.ad,
+                                        details = emptyMap(),
+                                        request = request
+                                    )
+                                )
+                            )
+                        }
+                    }
+
+                    override fun onAdRequestedToShow(event: ShowEvent) {}
+
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {}
+
+                    override fun onImpressionRecorded(event: ImpressionEvent) {
+                        partnerAdListener.onPartnerAdImpression(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            )
                         )
-                    )
-                }
+                    }
 
-                override fun didFailToRecordClick(uri: String?, error: CBError.CBClickError?) {}
-
-                override fun didCompleteRewardedVideo(location: String?, reward: Int) {
-                    partnerAdListener.onPartnerAdRewarded(
-                        PartnerAd(
-                            ad = null,
-                            details = emptyMap(),
-                            request = request
-                        ),
-                        reward = Reward(reward, location ?: "")
-                    )
-                }
-            })
+                    override fun onRewardEarned(event: RewardEvent) {
+                        partnerAdListener.onPartnerAdRewarded(
+                            PartnerAd(
+                                ad = event.ad,
+                                details = emptyMap(),
+                                request = request
+                            ),
+                            reward = Reward(event.reward, event.adID ?: "")
+                        )
+                    }
+                },
+                setMediation()
+            )
 
             // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
-                Chartboost.cacheRewardedVideo(request.partnerPlacement)
+                chartboostRewarded.cache()
             } else {
-                Chartboost.cacheRewardedVideo(request.partnerPlacement, request.adm)
+                chartboostRewarded.cache(request.adm)
             }
         }
     }
@@ -518,9 +509,12 @@ class ChartboostAdapter : PartnerAdapter {
     private fun showInterstitialAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
-        return partnerAd.let {
-            Chartboost.showInterstitial(it.request.partnerPlacement)
-            Result.success(it)
+        return partnerAd.ad?.let { ad ->
+            (ad as Interstitial).show()
+            Result.success(partnerAd)
+        } ?: run {
+            LogController.e("$TAG Failed to show Chartboost interstitial ad. Ad is null.")
+            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
 
@@ -534,9 +528,12 @@ class ChartboostAdapter : PartnerAdapter {
     private fun showRewardedAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
-        return partnerAd.let {
-            Chartboost.showRewardedVideo(it.request.partnerPlacement)
-            Result.success(it)
+        return partnerAd.ad?.let { ad ->
+            (ad as Rewarded).show()
+            Result.success(partnerAd)
+        } ?: run {
+            LogController.e("$TAG Failed to show Chartboost rewarded ad. Ad is null.")
+            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
 
@@ -549,8 +546,8 @@ class ChartboostAdapter : PartnerAdapter {
      */
     private fun destroyBannerAd(partnerAd: PartnerAd): Result<PartnerAd> {
         return partnerAd.ad?.let {
-            if (it is ChartboostBanner) {
-                it.detachBanner()
+            if (it is Banner) {
+                it.detach()
                 Result.success(partnerAd)
             } else {
                 LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is not a ChartboostBanner.")
@@ -560,5 +557,13 @@ class ChartboostAdapter : PartnerAdapter {
             LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
+    }
+
+    /**
+     * As Chartboost needs to pass a [Mediation] object to some of the methods.
+     * Let's have a method to avoid repetition.
+     */
+    private fun setMediation(): Mediation {
+        return Mediation("Helium", HeliumSdk.getVersion(), adapterVersion)
     }
 }

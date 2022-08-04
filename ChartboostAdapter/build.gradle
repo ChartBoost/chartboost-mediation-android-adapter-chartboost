@@ -9,9 +9,6 @@ repositories {
     maven {
         url 'https://cboost.jfrog.io/artifactory/helium/'
     }
-    flatDir {
-        dirs '../../android-helium-sdk/ChartboostHeliumAdapter/'
-    }
 }
 
 android {
@@ -21,7 +18,7 @@ android {
         minSdk 21
         targetSdk 32
         versionCode 1
-        versionName "3.8.3.1.0"
+        versionName "3.9.0.0.0"
         buildConfigField "String", "HELIUM_CHARTBOOST_ADAPTER_VERSION", "\"$versionName\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -53,14 +50,15 @@ dependencies {
     // Ensure that the Helium repo is a sibling of your `helium-android-adapter-applovin` dir.
     // The AAR file must also be available.
     implementation project(path: ':Helium')
-    implementation project(path: ':ChartboostHeliumAdapter')
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    // implementation 'com.chartboost:helium:3.0.0'
+     implementation 'com.chartboost:chartboost-sdk:9.0.0'
 
     //Partner SDK Dependencies
     implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.10"
 
     //Tests
     testImplementation 'junit:junit:4.13.2'
