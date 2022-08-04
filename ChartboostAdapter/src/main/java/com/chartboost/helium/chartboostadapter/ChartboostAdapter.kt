@@ -418,7 +418,7 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Attempt to load an Chartboost rewarded ad.
+     * Attempt to load a Chartboost rewarded ad.
      *
      * @param request The [AdLoadRequest] containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
@@ -509,7 +509,7 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Attempt to show an Chartboost interstitial ad.
+     * Attempt to show a Chartboost interstitial ad.
      *
      * @param partnerAd The [PartnerAd] object containing the Chartboost ad to be shown.
      *
@@ -525,7 +525,7 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Attempt to show an Chartboost rewarded ad.
+     * Attempt to show a Chartboost rewarded ad.
      *
      * @param partnerAd The [PartnerAd] object containing the Chartboost ad to be shown.
      *
