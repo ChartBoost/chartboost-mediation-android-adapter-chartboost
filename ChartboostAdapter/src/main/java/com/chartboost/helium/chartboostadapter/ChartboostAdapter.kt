@@ -92,7 +92,7 @@ class ChartboostAdapter : PartnerAdapter {
                     ) { startError ->
 
                         startError?.let {
-                            LogController.e("$TAG Failed to initialize Chartboost SDK: $it")
+                            LogController.e("$TAG Failed to initialize Chartboost SDK: ${it.code}")
                             continuation.resume(
                                 Result.failure(
                                     HeliumAdException(
@@ -388,12 +388,12 @@ class ChartboostAdapter : PartnerAdapter {
                     }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
-                        partnerAdListener.onPartnerAdDismissed(
+                        partnerAdListener.onPartnerAdImpression(
                             PartnerAd(
                                 ad = event.ad,
                                 details = emptyMap(),
                                 request = request
-                            ), null
+                            )
                         )
                     }
                 },
@@ -423,7 +423,7 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
             val chartboostRewarded = Rewarded(
-                request.heliumPlacement,
+                request.partnerPlacement,
                 object: RewardedCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
                         partnerAdListener.onPartnerAdClicked(
@@ -550,7 +550,7 @@ class ChartboostAdapter : PartnerAdapter {
                 it.detach()
                 Result.success(partnerAd)
             } else {
-                LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is not a ChartboostBanner.")
+                LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is not a Chartboost Banner.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
