@@ -18,6 +18,9 @@ import com.chartboost.sdk.callbacks.RewardedCallback
 import com.chartboost.sdk.events.*
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.GDPR
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -261,7 +264,7 @@ class ChartboostAdapter : PartnerAdapter {
                 context,
                 request.partnerPlacement,
                 getChartboostAdSize(request.size),
-                object: BannerCallback {
+                object : BannerCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
@@ -277,13 +280,20 @@ class ChartboostAdapter : PartnerAdapter {
                             LogController.d("$TAG failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
-                            continuation.resume(Result.success(
-                                PartnerAd(
-                                    ad = event.ad,
-                                    details = mapOf(),
-                                    request = request
+                            // Render the Chartboost banner on Main thread immediately after ad loaded.
+                            CoroutineScope(Main).launch {
+                                event.ad.show()
+                            }
+
+                            continuation.resume(
+                                Result.success(
+                                    PartnerAd(
+                                        ad = event.ad,
+                                        details = mapOf(),
+                                        request = request
+                                    )
                                 )
-                            ))
+                            )
                         }
                     }
 
@@ -381,11 +391,9 @@ class ChartboostAdapter : PartnerAdapter {
                         }
                     }
 
-                    override fun onAdRequestedToShow(event: ShowEvent) {
-                    }
+                    override fun onAdRequestedToShow(event: ShowEvent) {}
 
-                    override fun onAdShown(event: ShowEvent, error: ShowError?) {
-                    }
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {}
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
                         partnerAdListener.onPartnerAdImpression(
@@ -424,7 +432,7 @@ class ChartboostAdapter : PartnerAdapter {
         return suspendCoroutine { continuation ->
             val chartboostRewarded = Rewarded(
                 request.partnerPlacement,
-                object: RewardedCallback {
+                object : RewardedCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
