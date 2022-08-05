@@ -125,6 +125,9 @@ class ChartboostAdapter : PartnerAdapter {
     /**
      * Chartboost does not have a public method as to whether GDPR applies.
      * If anything was set previously for GDPR, it will be reset when gdpr does not apply.
+     *
+     * @param context The current [Context].
+     * @param gdprApplies True if GDPR applies, false otherwise.
      */
     override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
         if (!gdprApplies) {
@@ -134,7 +137,7 @@ class ChartboostAdapter : PartnerAdapter {
 
     /**
      * Notify Chartboost of user GDPR consent.
-     *
+     * @param context The current [Context].
      * @param gdprConsentStatus The user's current GDPR consent status.
      */
     override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
@@ -153,7 +156,8 @@ class ChartboostAdapter : PartnerAdapter {
 
     /**
      * Notify Chartboost of the CCPA compliance.
-     *
+     * @param context The current [Context].
+     * @param hasGivenCcpaConsent True if the user has given CCPA consent, false otherwise.
      * @param privacyString The CCPA privacy String.
      */
     override fun setCcpaConsent(
@@ -169,6 +173,9 @@ class ChartboostAdapter : PartnerAdapter {
 
     /**
      * Notify Chartboost of the COPPA subjectivity.
+     *
+     * @param context The current [Context].
+     * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
     override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
         // Chartboost does not have an API for setting COPPA. This may be different on 9.x.
@@ -203,7 +210,7 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
 
         return when (request.format) {
-            AdFormat.BANNER -> loadBannerAd(request, context, partnerAdListener)
+            AdFormat.BANNER -> loadBannerAd(context, request, partnerAdListener)
             AdFormat.INTERSTITIAL -> loadInterstitialAd(request, partnerAdListener)
             AdFormat.REWARDED -> loadRewardedAd(request, partnerAdListener)
         }
@@ -255,8 +262,8 @@ class ChartboostAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     private suspend fun loadBannerAd(
-        request: AdLoadRequest,
         context: Context,
+        request: AdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
@@ -289,7 +296,7 @@ class ChartboostAdapter : PartnerAdapter {
                                 Result.success(
                                     PartnerAd(
                                         ad = event.ad,
-                                        details = mapOf(),
+                                        details = emptyMap(),
                                         request = request
                                     )
                                 )
@@ -418,7 +425,7 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Attempt to load an Chartboost rewarded ad.
+     * Attempt to load a Chartboost rewarded ad.
      *
      * @param request The [AdLoadRequest] containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
