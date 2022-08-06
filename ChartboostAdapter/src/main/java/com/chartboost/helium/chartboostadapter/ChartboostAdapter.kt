@@ -17,6 +17,7 @@ import com.chartboost.sdk.callbacks.InterstitialCallback
 import com.chartboost.sdk.callbacks.RewardedCallback
 import com.chartboost.sdk.events.*
 import com.chartboost.sdk.privacy.model.CCPA
+import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.GDPR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
@@ -178,7 +179,7 @@ class ChartboostAdapter : PartnerAdapter {
      * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
     override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
-        // Chartboost does not have an API for setting COPPA. This may be different on 9.x.
+        Chartboost.addDataUseConsent(context, COPPA(isSubjectToCoppa))
     }
 
     /**
@@ -321,7 +322,6 @@ class ChartboostAdapter : PartnerAdapter {
                 setMediation()
             )
 
-            // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
                 chartboostBanner.cache()
             } else {
@@ -415,7 +415,6 @@ class ChartboostAdapter : PartnerAdapter {
                 setMediation()
             )
 
-            // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
                 chartboostInterstitial.cache()
             } else {
@@ -505,7 +504,6 @@ class ChartboostAdapter : PartnerAdapter {
                 setMediation()
             )
 
-            // TODO: New PartnerController needs to pass adm.
             if (request.adm.isNullOrEmpty()) {
                 chartboostRewarded.cache()
             } else {
