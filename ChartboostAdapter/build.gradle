@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        url 'https://cboost.jfrog.io/artifactory/helium/'
+    }
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 32
+        versionCode 1
+        versionName "3.9.0.0.0"
+        buildConfigField "String", "HELIUM_CHARTBOOST_ADAPTER_VERSION", "\"$versionName\""
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    // For internal usage, please use local pathing to get development features.
+    // Ensure that the Helium repo is a sibling of your `helium-android-adapter-applovin` dir.
+    // The AAR file must also be available.
+    implementation project(path: ':Helium')
+
+    // For external usage, please use the following production dependency.
+    // You may choose a different release version.
+     implementation 'com.chartboost:chartboost-sdk:9.0.0'
+
+    //Partner SDK Dependencies
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.10"
+
+    //Tests
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
