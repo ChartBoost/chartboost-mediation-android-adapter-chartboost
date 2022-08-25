@@ -22,6 +22,7 @@ import com.chartboost.sdk.privacy.model.GDPR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -40,6 +41,16 @@ class ChartboostAdapter : PartnerAdapter {
          */
         private const val APPLICATION_ID_KEY = "app_id"
     }
+
+    /**
+     * A lambda to call for successful Chartboost ad shows.
+     */
+    private var onShowSuccess: () -> Unit = {}
+
+    /**
+     * A lambda to call for failed Chartboost ad shows.
+     */
+    private var onShowError: (ShowEvent, ShowError) -> Unit = {_, _ ->}
 
     /**
      * Get the Chartboost SDK version.
@@ -400,7 +411,13 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdRequestedToShow(event: ShowEvent) {}
 
-                    override fun onAdShown(event: ShowEvent, error: ShowError?) {}
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {
+                        error?.let {
+                            onShowError(event, it)
+                        } ?: run {
+                            onShowSuccess()
+                        }
+                    }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
                         partnerAdListener.onPartnerAdImpression(
@@ -478,7 +495,13 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdRequestedToShow(event: ShowEvent) {}
 
-                    override fun onAdShown(event: ShowEvent, error: ShowError?) {}
+                    override fun onAdShown(event: ShowEvent, error: ShowError?) {
+                        error?.let {
+                            onShowError(event, it)
+                        } ?: run {
+                            onShowSuccess()
+                        }
+                    }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
                         partnerAdListener.onPartnerAdImpression(
@@ -519,12 +542,22 @@ class ChartboostAdapter : PartnerAdapter {
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
-    private fun showInterstitialAd(
+    private suspend fun showInterstitialAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
         return partnerAd.ad?.let { ad ->
-            (ad as Interstitial).show()
-            Result.success(partnerAd)
+            suspendCancellableCoroutine{ continuation ->
+                onShowSuccess = {
+                    continuation.resume(Result.success(partnerAd))
+                }
+
+                onShowError = {event, error ->
+                    LogController.d("$TAG Failed to show Chartboost interstitial ad. " +
+                            "For location: ${event.ad.location} Error: ${error.code}")
+                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_ERROR)))
+                }
+                (ad as Interstitial).show()
+            }
         } ?: run {
             LogController.e("$TAG Failed to show Chartboost interstitial ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
@@ -538,12 +571,22 @@ class ChartboostAdapter : PartnerAdapter {
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
-    private fun showRewardedAd(
+    private suspend fun showRewardedAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
         return partnerAd.ad?.let { ad ->
-            (ad as Rewarded).show()
-            Result.success(partnerAd)
+            suspendCancellableCoroutine{ continuation ->
+                onShowSuccess = {
+                    continuation.resume(Result.success(partnerAd))
+                }
+
+                onShowError = {event, error ->
+                    LogController.d("$TAG Failed to show Chartboost interstitial ad. " +
+                            "For location: ${event.ad.location} Error: ${error.code}")
+                    continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_ERROR)))
+                }
+                (ad as Rewarded).show()
+            }
         } ?: run {
             LogController.e("$TAG Failed to show Chartboost rewarded ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
