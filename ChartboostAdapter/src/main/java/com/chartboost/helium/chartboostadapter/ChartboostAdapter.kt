@@ -416,8 +416,7 @@ class ChartboostAdapter : PartnerAdapter {
                             LogController.d("$TAG Failed to show Chartboost interstitial ad. " +
                                     "For location: ${event.ad.location} Error: ${error.code}")
                             onShowError()
-                        }
-                        onShowSuccess()
+                        } ?: onShowSuccess()
                     }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
@@ -501,8 +500,7 @@ class ChartboostAdapter : PartnerAdapter {
                             LogController.d("$TAG Failed to show Chartboost rewarded ad. " +
                                     "For location: ${event.ad.location} Error: ${error.code}")
                             onShowError()
-                        }
-                        onShowSuccess()
+                        } ?: onShowSuccess()
                     }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
