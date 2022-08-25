@@ -545,7 +545,7 @@ class ChartboostAdapter : PartnerAdapter {
     private suspend fun showInterstitialAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
-        return partnerAd.ad?.let { ad ->
+        return (partnerAd.ad as? Interstitial)?.let { ad ->
             suspendCancellableCoroutine{ continuation ->
                 onShowSuccess = {
                     continuation.resume(Result.success(partnerAd))
@@ -556,7 +556,7 @@ class ChartboostAdapter : PartnerAdapter {
                             "For location: ${event.ad.location} Error: ${error.code}")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_ERROR)))
                 }
-                (ad as Interstitial).show()
+                ad.show()
             }
         } ?: run {
             LogController.e("$TAG Failed to show Chartboost interstitial ad. Ad is null.")
@@ -574,18 +574,18 @@ class ChartboostAdapter : PartnerAdapter {
     private suspend fun showRewardedAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
-        return partnerAd.ad?.let { ad ->
+        return (partnerAd.ad as? Rewarded)?.let { ad ->
             suspendCancellableCoroutine{ continuation ->
                 onShowSuccess = {
                     continuation.resume(Result.success(partnerAd))
                 }
 
                 onShowError = {event, error ->
-                    LogController.d("$TAG Failed to show Chartboost interstitial ad. " +
+                    LogController.d("$TAG Failed to show Chartboost rewarded ad. " +
                             "For location: ${event.ad.location} Error: ${error.code}")
                     continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_ERROR)))
                 }
-                (ad as Rewarded).show()
+                ad.show()
             }
         } ?: run {
             LogController.e("$TAG Failed to show Chartboost rewarded ad. Ad is null.")
