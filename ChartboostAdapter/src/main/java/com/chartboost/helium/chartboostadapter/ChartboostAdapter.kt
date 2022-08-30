@@ -32,11 +32,6 @@ import kotlin.coroutines.suspendCoroutine
 class ChartboostAdapter : PartnerAdapter {
     companion object {
         /**
-         * The tag used for logging messages.
-         */
-        private val TAG = "[${this::class.java.simpleName}]"
-
-        /**
          * Key for parsing the Chartboost SDK application ID.
          */
         private const val APPLICATION_ID_KEY = "app_id"
@@ -107,7 +102,7 @@ class ChartboostAdapter : PartnerAdapter {
                     ) { startError ->
 
                         startError?.let {
-                            LogController.e("$TAG Failed to initialize Chartboost SDK: ${it.code}")
+                            LogController.e("Failed to initialize Chartboost SDK: ${it.code}")
                             continuation.resume(
                                 Result.failure(
                                     HeliumAdException(
@@ -118,17 +113,17 @@ class ChartboostAdapter : PartnerAdapter {
                         } ?: run {
                             continuation.resume(
                                 Result.success(
-                                    LogController.i("$TAG Chartboost SDK successfully initialized.")
+                                    LogController.i("Chartboost SDK successfully initialized.")
                                 )
                             )
                         }
                     }
                 } ?: run {
-                    LogController.e("$TAG Failed to initialize Chartboost SDK: Missing application signature.")
+                    LogController.e("Failed to initialize Chartboost SDK: Missing application signature.")
                     continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                 }
             } ?: run {
-                LogController.e("$TAG Failed to initialize Chartboost SDK: Missing application ID.")
+                LogController.e("Failed to initialize Chartboost SDK: Missing application ID.")
                 continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
             }
         }
@@ -296,7 +291,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("$TAG failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
+                            LogController.d("failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
                             // Render the Chartboost banner on Main thread immediately after ad loaded.
@@ -394,7 +389,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("$TAG failed to load Chartboost interstitial ad. Chartboost Error: $error")
+                            LogController.d("failed to load Chartboost interstitial ad. Chartboost Error: $error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
                             continuation.resume(
@@ -413,7 +408,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdShown(event: ShowEvent, error: ShowError?) {
                         error?.let {
-                            LogController.d("$TAG Failed to show Chartboost interstitial ad. " +
+                            LogController.d("Failed to show Chartboost interstitial ad. " +
                                     "For location: ${event.ad.location} Error: ${error.code}")
                             onShowError()
                         } ?: onShowSuccess()
@@ -478,7 +473,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("$TAG failed to cache Chartboost rewarded ad. Chartboost Error: $error")
+                            LogController.d("failed to cache Chartboost rewarded ad. Chartboost Error: $error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
                             continuation.resume(
@@ -497,7 +492,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdShown(event: ShowEvent, error: ShowError?) {
                         error?.let {
-                            LogController.d("$TAG Failed to show Chartboost rewarded ad. " +
+                            LogController.d("Failed to show Chartboost rewarded ad. " +
                                     "For location: ${event.ad.location} Error: ${error.code}")
                             onShowError()
                         } ?: onShowSuccess()
@@ -562,11 +557,11 @@ class ChartboostAdapter : PartnerAdapter {
                     it.show()
                 }
             } ?: run {
-                LogController.e("$TAG Failed to show Chartboost interstitial ad. Ad is not Interstitial.")
+                LogController.e("Failed to show Chartboost interstitial ad. Ad is not Interstitial.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.e("$TAG Failed to show Chartboost interstitial ad. Ad is null.")
+            LogController.e("Failed to show Chartboost interstitial ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -598,11 +593,11 @@ class ChartboostAdapter : PartnerAdapter {
                     it.show()
                 }
             } ?: run {
-                LogController.e("$TAG Failed to show Chartboost rewarded ad. Ad is not Rewarded.")
+                LogController.e("Failed to show Chartboost rewarded ad. Ad is not Rewarded.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.e("$TAG Failed to show Chartboost rewarded ad. Ad is null.")
+            LogController.e("Failed to show Chartboost rewarded ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -620,11 +615,11 @@ class ChartboostAdapter : PartnerAdapter {
                 it.detach()
                 Result.success(partnerAd)
             } else {
-                LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is not a Chartboost Banner.")
+                LogController.w("Failed to destroy Chartboost banner ad. Ad is not a Chartboost Banner.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.w("$TAG Failed to destroy Chartboost banner ad. Ad is null.")
+            LogController.w("Failed to destroy Chartboost banner ad. Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
