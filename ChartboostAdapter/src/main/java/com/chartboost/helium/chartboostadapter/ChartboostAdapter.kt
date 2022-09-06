@@ -5,7 +5,10 @@ import android.util.DisplayMetrics
 import android.util.Size
 import com.chartboost.heliumsdk.HeliumSdk
 import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.LogController
+import com.chartboost.heliumsdk.utils.PartnerLogController
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterFailureEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterSuccessEvents.*
 import com.chartboost.sdk.Chartboost
 import com.chartboost.sdk.LoggingLevel
 import com.chartboost.sdk.Mediation
@@ -45,7 +48,8 @@ class ChartboostAdapter : PartnerAdapter {
     /**
      * A lambda to call for failed Chartboost ad shows.
      */
-    private var onShowError: () -> Unit = {}
+    private var onShowError: (event: ShowEvent, error: ShowError) -> Unit =
+        { _: ShowEvent, _: ShowError -> }
 
     /**
      * Get the Chartboost SDK version.
@@ -87,6 +91,8 @@ class ChartboostAdapter : PartnerAdapter {
         context: Context,
         partnerConfiguration: PartnerConfiguration
     ): Result<Unit> {
+        PartnerLogController.log(SETUP_STARTED)
+
         return suspendCoroutine { continuation ->
             partnerConfiguration.credentials[APPLICATION_ID_KEY]?.let { app_id ->
                 // The server does not provide the app signature. As Chartboost and Helium use
@@ -102,7 +108,7 @@ class ChartboostAdapter : PartnerAdapter {
                     ) { startError ->
 
                         startError?.let {
-                            LogController.e("Failed to initialize Chartboost SDK: ${it.code}")
+                            PartnerLogController.log(SETUP_FAILED, "${it.code}")
                             continuation.resume(
                                 Result.failure(
                                     HeliumAdException(
@@ -111,19 +117,18 @@ class ChartboostAdapter : PartnerAdapter {
                                 )
                             )
                         } ?: run {
+                            PartnerLogController.log(SETUP_SUCCEEDED)
                             continuation.resume(
-                                Result.success(
-                                    LogController.i("Chartboost SDK successfully initialized.")
-                                )
+                                Result.success(PartnerLogController.log(SETUP_SUCCEEDED))
                             )
                         }
                     }
                 } ?: run {
-                    LogController.e("Failed to initialize Chartboost SDK: Missing application signature.")
+                    PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
                     continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                 }
             } ?: run {
-                LogController.e("Failed to initialize Chartboost SDK: Missing application ID.")
+                PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
                 continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
             }
         }
@@ -199,22 +204,27 @@ class ChartboostAdapter : PartnerAdapter {
     override suspend fun fetchBidderInformation(
         context: Context,
         request: PreBidRequest
-    ): Map<String, String> = emptyMap()
+    ): Map<String, String> {
+        PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
+        PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
+        return emptyMap()
+    }
 
     /**
      * Attempt to load a Chartboost ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     override suspend fun load(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
+        PartnerLogController.log(LOAD_STARTED)
 
         return when (request.format) {
             AdFormat.BANNER -> loadBannerAd(context, request, partnerAdListener)
@@ -232,9 +242,12 @@ class ChartboostAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(context: Context, partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(SHOW_STARTED)
+
         return when (partnerAd.request.format) {
             AdFormat.BANNER -> {
                 // Banner ads do not have a separate "show" mechanism.
+                PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
             AdFormat.INTERSTITIAL -> showInterstitialAd(partnerAd)
@@ -250,10 +263,13 @@ class ChartboostAdapter : PartnerAdapter {
      * @return Result.success(PartnerAd) if the ad was successfully discarded, Result.failure(Exception) otherwise.
      */
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
+        PartnerLogController.log(INVALIDATE_STARTED)
+
         return when (partnerAd.request.format) {
             AdFormat.BANNER -> destroyBannerAd(partnerAd)
             AdFormat.INTERSTITIAL, AdFormat.REWARDED -> {
                 // Chartboost does not have destroy methods for their fullscreen ads.
+                PartnerLogController.log(INVALIDATE_SUCCEEDED)
                 Result.success(partnerAd)
             }
         }
@@ -263,14 +279,14 @@ class ChartboostAdapter : PartnerAdapter {
      * Attempt to load a Chartboost banner ad.
      *
      * @param context The current [Context].
-     * @param request An [AdLoadRequest] instance containing relevant data for the current ad load call.
+     * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     private suspend fun loadBannerAd(
         context: Context,
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
@@ -280,6 +296,7 @@ class ChartboostAdapter : PartnerAdapter {
                 getChartboostAdSize(request.size),
                 object : BannerCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
+                        PartnerLogController.log(DID_CLICK)
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
                                 ad = event.ad,
@@ -291,7 +308,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("failed to load Chartboost banner ad. Chartboost Error Code: ${it.code}")
+                            PartnerLogController.log(LOAD_FAILED, "${it.code}")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
                             // Render the Chartboost banner on Main thread immediately after ad loaded.
@@ -299,6 +316,7 @@ class ChartboostAdapter : PartnerAdapter {
                                 event.ad.show()
                             }
 
+                            PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
                                 Result.success(
                                     PartnerAd(
@@ -316,6 +334,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdShown(event: ShowEvent, error: ShowError?) {}
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
+                        PartnerLogController.log(DID_TRACK_IMPRESSION)
                         partnerAdListener.onPartnerAdImpression(
                             PartnerAd(
                                 ad = event.ad,
@@ -353,13 +372,13 @@ class ChartboostAdapter : PartnerAdapter {
     /**
      * Attempt to load a Chartboost interstitial ad.
      *
-     * @param request An [AdLoadRequest] instance containing data to load the ad with.
+     * @param request An [PartnerAdLoadRequest] instance containing data to load the ad with.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     private suspend fun loadInterstitialAd(
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
 
@@ -368,6 +387,7 @@ class ChartboostAdapter : PartnerAdapter {
                 request.partnerPlacement,
                 object : InterstitialCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
+                        PartnerLogController.log(DID_CLICK)
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
                                 ad = event.ad,
@@ -378,6 +398,7 @@ class ChartboostAdapter : PartnerAdapter {
                     }
 
                     override fun onAdDismiss(event: DismissEvent) {
+                        PartnerLogController.log(DID_DISMISS)
                         partnerAdListener.onPartnerAdDismissed(
                             PartnerAd(
                                 ad = event.ad,
@@ -389,9 +410,10 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("failed to load Chartboost interstitial ad. Chartboost Error: $error")
+                            PartnerLogController.log(LOAD_FAILED, "$error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
+                            PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
                                 Result.success(
                                     PartnerAd(
@@ -408,13 +430,12 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdShown(event: ShowEvent, error: ShowError?) {
                         error?.let {
-                            LogController.d("Failed to show Chartboost interstitial ad. " +
-                                    "For location: ${event.ad.location} Error: ${error.code}")
-                            onShowError()
+                            onShowError(event, it)
                         } ?: onShowSuccess()
                     }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
+                        PartnerLogController.log(DID_TRACK_IMPRESSION)
                         partnerAdListener.onPartnerAdImpression(
                             PartnerAd(
                                 ad = event.ad,
@@ -438,13 +459,13 @@ class ChartboostAdapter : PartnerAdapter {
     /**
      * Attempt to load a Chartboost rewarded ad.
      *
-     * @param request The [AdLoadRequest] containing relevant data for the current ad load call.
+     * @param request The [PartnerAdLoadRequest] containing relevant data for the current ad load call.
      * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
     private suspend fun loadRewardedAd(
-        request: AdLoadRequest,
+        request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCoroutine { continuation ->
@@ -452,6 +473,7 @@ class ChartboostAdapter : PartnerAdapter {
                 request.partnerPlacement,
                 object : RewardedCallback {
                     override fun onAdClicked(event: ClickEvent, error: ClickError?) {
+                        PartnerLogController.log(DID_CLICK)
                         partnerAdListener.onPartnerAdClicked(
                             PartnerAd(
                                 ad = event.ad,
@@ -462,6 +484,7 @@ class ChartboostAdapter : PartnerAdapter {
                     }
 
                     override fun onAdDismiss(event: DismissEvent) {
+                        PartnerLogController.log(DID_DISMISS)
                         partnerAdListener.onPartnerAdDismissed(
                             PartnerAd(
                                 ad = event.ad,
@@ -473,9 +496,10 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
-                            LogController.d("failed to cache Chartboost rewarded ad. Chartboost Error: $error")
+                            PartnerLogController.log(LOAD_FAILED, "$error")
                             continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
                         } ?: run {
+                            PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
                                 Result.success(
                                     PartnerAd(
@@ -492,13 +516,12 @@ class ChartboostAdapter : PartnerAdapter {
 
                     override fun onAdShown(event: ShowEvent, error: ShowError?) {
                         error?.let {
-                            LogController.d("Failed to show Chartboost rewarded ad. " +
-                                    "For location: ${event.ad.location} Error: ${error.code}")
-                            onShowError()
+                            onShowError(event, it)
                         } ?: onShowSuccess()
                     }
 
                     override fun onImpressionRecorded(event: ImpressionEvent) {
+                        PartnerLogController.log(DID_TRACK_IMPRESSION)
                         partnerAdListener.onPartnerAdImpression(
                             PartnerAd(
                                 ad = event.ad,
@@ -509,6 +532,7 @@ class ChartboostAdapter : PartnerAdapter {
                     }
 
                     override fun onRewardEarned(event: RewardEvent) {
+                        PartnerLogController.log(DID_REWARD)
                         partnerAdListener.onPartnerAdRewarded(
                             PartnerAd(
                                 ad = event.ad,
@@ -544,10 +568,15 @@ class ChartboostAdapter : PartnerAdapter {
             (ad as? Interstitial)?.let {
                 suspendCancellableCoroutine { continuation ->
                     onShowSuccess = {
+                        PartnerLogController.log(SHOW_SUCCEEDED)
                         continuation.resume(Result.success(partnerAd))
                     }
 
-                    onShowError = {
+                    onShowError = { event, error ->
+                        PartnerLogController.log(
+                            SHOW_FAILED, "Location: ${event.ad.location}. Error: ${error.code}"
+                        )
+
                         continuation.resume(
                             Result.failure(
                                 HeliumAdException(HeliumErrorCode.PARTNER_ERROR)
@@ -557,11 +586,11 @@ class ChartboostAdapter : PartnerAdapter {
                     it.show()
                 }
             } ?: run {
-                LogController.e("Failed to show Chartboost interstitial ad. Ad is not Interstitial.")
+                PartnerLogController.log(SHOW_FAILED, "Ad is not Interstitial.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.e("Failed to show Chartboost interstitial ad. Ad is null.")
+            PartnerLogController.log(SHOW_FAILED, "Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -576,14 +605,18 @@ class ChartboostAdapter : PartnerAdapter {
     private suspend fun showRewardedAd(
         partnerAd: PartnerAd
     ): Result<PartnerAd> {
-        return (partnerAd.ad)?.let{ ad ->
+        return (partnerAd.ad)?.let { ad ->
             (ad as? Rewarded)?.let {
                 suspendCancellableCoroutine { continuation ->
                     onShowSuccess = {
+                        PartnerLogController.log(SHOW_SUCCEEDED)
                         continuation.resume(Result.success(partnerAd))
                     }
 
-                    onShowError = {
+                    onShowError = { event, error ->
+                        PartnerLogController.log(
+                            SHOW_FAILED, "Location: ${event.ad.location}. Error: ${error.code}"
+                        )
                         continuation.resume(
                             Result.failure(
                                 HeliumAdException(HeliumErrorCode.PARTNER_ERROR)
@@ -593,11 +626,11 @@ class ChartboostAdapter : PartnerAdapter {
                     it.show()
                 }
             } ?: run {
-                LogController.e("Failed to show Chartboost rewarded ad. Ad is not Rewarded.")
+                PartnerLogController.log(SHOW_FAILED, "Ad is not Rewarded.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.e("Failed to show Chartboost rewarded ad. Ad is null.")
+            PartnerLogController.log(SHOW_FAILED, "Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
@@ -613,13 +646,15 @@ class ChartboostAdapter : PartnerAdapter {
         return partnerAd.ad?.let {
             if (it is Banner) {
                 it.detach()
+
+                PartnerLogController.log(INVALIDATE_SUCCEEDED)
                 Result.success(partnerAd)
             } else {
-                LogController.w("Failed to destroy Chartboost banner ad. Ad is not a Chartboost Banner.")
+                PartnerLogController.log(INVALIDATE_FAILED, "Ad is not a Chartboost Banner.")
                 Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
             }
         } ?: run {
-            LogController.w("Failed to destroy Chartboost banner ad. Ad is null.")
+            PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
             Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
         }
     }
