@@ -94,8 +94,8 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(SETUP_STARTED)
 
         return suspendCoroutine { continuation ->
-            partnerConfiguration.credentials.optString(APPLICATION_ID_KEY)
-                .takeIf { it.isNotBlank() }?.let { appId ->
+            partnerConfiguration.credentials.optString(APPLICATION_ID_KEY).trim()
+                .takeIf { it.isNotEmpty() }?.let { appId ->
                 // The server does not provide the app signature. As Chartboost and Helium use
                 // the same app id and app signature, we can pass the app signature to Chartboost
                 // from the Helium SDK.
