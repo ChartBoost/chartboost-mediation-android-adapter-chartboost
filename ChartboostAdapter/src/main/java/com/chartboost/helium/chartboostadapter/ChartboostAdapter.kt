@@ -96,39 +96,39 @@ class ChartboostAdapter : PartnerAdapter {
         return suspendCoroutine { continuation ->
             partnerConfiguration.credentials.optString(APPLICATION_ID_KEY).trim()
                 .takeIf { it.isNotEmpty() }?.let { appId ->
-                // The server does not provide the app signature. As Chartboost and Helium use
-                // the same app id and app signature, we can pass the app signature to Chartboost
-                // from the Helium SDK.
-                HeliumSdk.getAppSignature()?.let { app_signature ->
-                    Chartboost.setLoggingLevel(LoggingLevel.ALL)
+                    // The server does not provide the app signature. As Chartboost and Helium use
+                    // the same app id and app signature, we can pass the app signature to Chartboost
+                    // from the Helium SDK.
+                    HeliumSdk.getAppSignature()?.let { app_signature ->
+                        Chartboost.setLoggingLevel(LoggingLevel.ALL)
 
-                    Chartboost.startWithAppId(
-                        context.applicationContext,
-                        appId,
-                        app_signature
-                    ) { startError ->
+                        Chartboost.startWithAppId(
+                            context.applicationContext,
+                            appId,
+                            app_signature
+                        ) { startError ->
 
-                        startError?.let {
-                            PartnerLogController.log(SETUP_FAILED, "${it.code}")
-                            continuation.resume(
-                                Result.failure(
-                                    HeliumAdException(
-                                        HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                            startError?.let {
+                                PartnerLogController.log(SETUP_FAILED, "${it.code}")
+                                continuation.resume(
+                                    Result.failure(
+                                        HeliumAdException(
+                                            HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                                        )
                                     )
                                 )
-                            )
-                        } ?: run {
-                            PartnerLogController.log(SETUP_SUCCEEDED)
-                            continuation.resume(
-                                Result.success(PartnerLogController.log(SETUP_SUCCEEDED))
-                            )
+                            } ?: run {
+                                PartnerLogController.log(SETUP_SUCCEEDED)
+                                continuation.resume(
+                                    Result.success(PartnerLogController.log(SETUP_SUCCEEDED))
+                                )
+                            }
                         }
+                    } ?: run {
+                        PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
+                        continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
                     }
                 } ?: run {
-                    PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                    continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
-                }
-            } ?: run {
                 PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
                 continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
             }
