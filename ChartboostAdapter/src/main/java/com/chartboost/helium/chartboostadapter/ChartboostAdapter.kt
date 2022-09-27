@@ -7,8 +7,6 @@ import com.chartboost.heliumsdk.HeliumSdk
 import com.chartboost.heliumsdk.domain.*
 import com.chartboost.heliumsdk.utils.PartnerLogController
 import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterFailureEvents.*
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterSuccessEvents.*
 import com.chartboost.sdk.Chartboost
 import com.chartboost.sdk.LoggingLevel
 import com.chartboost.sdk.Mediation
@@ -143,6 +141,8 @@ class ChartboostAdapter : PartnerAdapter {
      * @param gdprApplies True if GDPR applies, false otherwise.
      */
     override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
+        PartnerLogController.log(if (gdprApplies) GDPR_APPLICABLE else GDPR_NOT_APPLICABLE)
+
         if (!gdprApplies) {
             Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
         }
@@ -155,32 +155,47 @@ class ChartboostAdapter : PartnerAdapter {
      */
     override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
         when (gdprConsentStatus) {
-            GdprConsentStatus.GDPR_CONSENT_GRANTED -> Chartboost.addDataUseConsent(
-                context,
-                GDPR(GDPR.GDPR_CONSENT.BEHAVIORAL)
-            )
-            GdprConsentStatus.GDPR_CONSENT_DENIED -> Chartboost.addDataUseConsent(
-                context,
-                GDPR(GDPR.GDPR_CONSENT.NON_BEHAVIORAL)
-            )
-            else -> Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+            GdprConsentStatus.GDPR_CONSENT_GRANTED -> {
+                PartnerLogController.log(GDPR_CONSENT_GRANTED)
+                Chartboost.addDataUseConsent(
+                    context,
+                    GDPR(GDPR.GDPR_CONSENT.BEHAVIORAL)
+                )
+            }
+            GdprConsentStatus.GDPR_CONSENT_DENIED -> {
+                PartnerLogController.log(GDPR_CONSENT_DENIED)
+                Chartboost.addDataUseConsent(
+                    context,
+                    GDPR(GDPR.GDPR_CONSENT.NON_BEHAVIORAL)
+                )
+            }
+            else -> {
+                PartnerLogController.log(GDPR_CONSENT_UNKNOWN)
+                Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+            }
         }
     }
 
     /**
      * Notify Chartboost of the CCPA compliance.
      * @param context The current [Context].
-     * @param hasGivenCcpaConsent True if the user has given CCPA consent, false otherwise.
+     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
      * @param privacyString The CCPA privacy String.
      */
     override fun setCcpaConsent(
         context: Context,
-        hasGivenCcpaConsent: Boolean,
+        hasGrantedCcpaConsent: Boolean,
         privacyString: String?
     ) {
-        when (hasGivenCcpaConsent) {
-            true -> Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_IN_SALE))
-            false -> Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
+        when (hasGrantedCcpaConsent) {
+            true -> {
+                PartnerLogController.log(CCPA_CONSENT_GRANTED)
+                Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_IN_SALE))
+            }
+            false -> {
+                PartnerLogController.log(CCPA_CONSENT_DENIED)
+                Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
+            }
         }
     }
 
@@ -191,6 +206,11 @@ class ChartboostAdapter : PartnerAdapter {
      * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
      */
     override fun setUserSubjectToCoppa(context: Context, isSubjectToCoppa: Boolean) {
+        PartnerLogController.log(
+            if (isSubjectToCoppa) COPPA_SUBJECT
+            else COPPA_NOT_SUBJECT
+        )
+
         Chartboost.addDataUseConsent(context, COPPA(isSubjectToCoppa))
     }
 
