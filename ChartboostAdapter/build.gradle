@@ -75,9 +75,9 @@ dependencies {
      implementation 'com.chartboost:chartboost-sdk:9.0.0'
 
     //Partner SDK Dependencies
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.6.10"
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.20"
 
     //Tests
     testImplementation 'junit:junit:4.13.2'
