@@ -1,11 +1,20 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'maven-publish'
+    id 'com.jfrog.artifactory'
 }
 
 repositories {
     google()
     mavenCentral()
+    maven {
+        url 'https://cboost.jfrog.io/artifactory/private-helium/'
+        credentials {
+            username System.getenv("JFROG_USER")
+            password System.getenv("JFROG_PASS")
+        }
+    }
     maven {
         url 'https://cboost.jfrog.io/artifactory/helium/'
     }
@@ -18,10 +27,17 @@ android {
         minSdk 21
         targetSdk 32
         versionCode 1
-        versionName "3.9.0.0.0"
+        // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
+        versionName System.getenv("VERSION_OVERRIDE") ?: "4.9.0.0.0"
         buildConfigField "String", "HELIUM_CHARTBOOST_ADAPTER_VERSION", "\"$versionName\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions "location"
+    productFlavors {
+        local {}
+        remote {}
     }
 
     buildTypes {
@@ -46,10 +62,12 @@ android {
 }
 
 dependencies {
-    // For internal usage, please use local pathing to get development features.
-    // Ensure that the Helium repo is a sibling of your `helium-android-adapter-applovin` dir.
-    // The AAR file must also be available.
-    implementation project(path: ':Helium')
+    localImplementation project(path: ':Helium')
+
+    // For external usage, please use the following production dependency.
+    // You may choose a different release version.
+    // TODO: Change this to 4.+ when it's released
+    remoteImplementation 'com.chartboost:helium:+'
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
@@ -64,4 +82,77 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
+
+artifactory {
+    clientConfig.setIncludeEnvVars(true)
+
+    contextUrl = 'https://cboost.jfrog.io/artifactory'
+    publish {
+        repository {
+            // If this is a release build, push to the public "helium" artifactory.
+            // Otherwise, push to the "private-helium" artifactory.
+            var isReleaseBuild = 'true' == System.getenv('HELIUM_IS_RELEASE')
+            if (isReleaseBuild) {
+                repoKey = 'helium'
+            } else {
+                repoKey = 'private-helium'
+            }
+            // Set the environment variables for these to be able to push to artifactory.
+            username = System.getenv("JFROG_USER")
+            password = System.getenv("JFROG_PASS")
+        }
+
+        defaults {
+            publications('ChartboostAdapter', 'aar')
+            publishArtifacts = true
+            publishPom = true
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            remoteRelease(MavenPublication) {
+                from components.remoteRelease
+
+                var adapterName = "chartboost"
+                groupId = 'com.chartboost'
+                artifactId = "helium-adapter-$adapterName"
+                version = project.hasProperty('snapshot') ? android.defaultConfig.versionName + rootProject.SNAPSHOT : android.defaultConfig.versionName
+
+                pom {
+                    name = "Helium Adapter Chartboost"
+                    description = 'Better monetization. Powered by bidding'
+                    url = 'https://www.chartboost.com/helium/'
+
+                    licenses {
+                        license {
+                            name = 'https://answers.chartboost.com/en-us/articles/200780239'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'chartboostmobile'
+                            name = 'chartboost mobile'
+                            email = 'mobile@chartboost.com'
+                        }
+                    }
+
+                    scm {
+                        var gitUrl = "https://github.com/ChartBoost/helium-android-adapter-$adapterName"
+                        url = gitUrl
+                        connection = gitUrl
+                        developerConnection = gitUrl
+                    }
+                }
+            }
+        }
+    }
+
+    artifactoryPublish {
+        publications(publishing.publications.remoteRelease)
+    }
 }

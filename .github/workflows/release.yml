@@ -1,0 +1,38 @@
+name: release
+on:
+  push:
+    tags:
+      # When any release tag is pushed
+      - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  helium-release:
+    runs-on: ubuntu-latest
+    environment: CI
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Clear potential environment variable conflicts
+      run: unset VERSION_OVERRIDE
+
+    - name: Build with Gradle
+      env: 
+        JFROG_USER: ${{ secrets.JFROG_USER }}
+        JFROG_PASS: ${{ secrets.JFROG_PASS }}
+        HELIUM_IS_RELEASE: 'true'
+      run: ./gradlew ci artifactoryPublish
+
+    - name: Github Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: ChartboostAdapter/build/outputs/aar/*.aar
