@@ -1,0 +1,44 @@
+name: generate-rc
+on:
+  push:
+    branches:
+      # When any prerelease branch is pushed to.
+      - 'prerelease/**'
+  # Manual trigger from the Github Actions tab
+  workflow_dispatch:
+
+jobs:
+  create-rc:
+    runs-on: ubuntu-latest
+    environment: CI
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Grant execute permission for get next candidate name
+      run: chmod +x scripts/get_rc_version.zsh
+
+    - name: Get next release candidate name
+      env:
+        JFROG_USER: ${{ secrets.JFROG_USER }}
+        JFROG_PASS: ${{ secrets.JFROG_PASS }}
+      # Uses the get rc version script to get the name of the next release candidate. This should take
+      # for example 1.2.3.4.5 and return 1.2.3.4.5-rc1 for the first run of this and incrementing the rc
+      # number for subsequent runs.
+      run: echo "VERSION_OVERRIDE=`scripts/get_rc_version.zsh`" >> $GITHUB_ENV
+
+    - name: Build with Gradle
+      env: 
+        JFROG_USER: ${{ secrets.JFROG_USER }}
+        JFROG_PASS: ${{ secrets.JFROG_PASS }}
+        HELIUM_IS_RELEASE: 'false'
+      run: ./gradlew ci artifactoryPublish
