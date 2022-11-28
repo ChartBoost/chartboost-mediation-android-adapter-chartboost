@@ -689,17 +689,30 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Convert a given Chartboost error a [HeliumErrorCode].
+     * Convert a given Chartboost error to a [HeliumErrorCode].
      *
      * @param error The Chartboost error to convert.
      *
      * @return The corresponding [HeliumErrorCode].
      */
-    private fun getHeliumErrorCode(error: Any) = when(error) {
-        CacheError.Code.INTERNET_UNAVAILABLE, ShowError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumErrorCode.NO_CONNECTIVITY
-        CacheError.Code.NO_AD_FOUND, ShowError.Code.NO_CACHED_AD -> HeliumErrorCode.NO_FILL
-        CacheError.Code.SESSION_NOT_STARTED, ShowError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
-        CacheError.Code.SERVER_ERROR -> HeliumErrorCode.SERVER_ERROR
+    private fun getHeliumErrorCode(error: CBError) = when (error) {
+        is CacheError -> {
+            when (error.code) {
+                CacheError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumErrorCode.NO_CONNECTIVITY
+                CacheError.Code.NO_AD_FOUND -> HeliumErrorCode.NO_FILL
+                CacheError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                CacheError.Code.SERVER_ERROR -> HeliumErrorCode.SERVER_ERROR
+                else -> HeliumErrorCode.INTERNAL
+            }
+        }
+        is ShowError -> {
+            when (error.code) {
+                ShowError.Code.INTERNET_UNAVAILABLE -> HeliumErrorCode.NO_CONNECTIVITY
+                ShowError.Code.NO_CACHED_AD -> HeliumErrorCode.NO_FILL
+                ShowError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                else -> HeliumErrorCode.PARTNER_ERROR
+            }
+        }
         else -> HeliumErrorCode.PARTNER_ERROR
     }
 }
