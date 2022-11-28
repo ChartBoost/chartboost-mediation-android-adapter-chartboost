@@ -330,7 +330,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "${it.code}")
-                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
                         } ?: run {
                             // Render the Chartboost banner on Main thread immediately after ad loaded.
                             CoroutineScope(Main).launch {
@@ -432,7 +432,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
@@ -518,7 +518,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(HeliumErrorCode.NO_FILL)))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
@@ -600,7 +600,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(HeliumErrorCode.PARTNER_ERROR)
+                                HeliumAdException(getHeliumErrorCode(error))
                             )
                         )
                     }
@@ -640,7 +640,7 @@ class ChartboostAdapter : PartnerAdapter {
                         )
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(HeliumErrorCode.PARTNER_ERROR)
+                                HeliumAdException(getHeliumErrorCode(error))
                             )
                         )
                     }
@@ -686,5 +686,33 @@ class ChartboostAdapter : PartnerAdapter {
      */
     private fun setMediation(): Mediation {
         return Mediation("Helium", HeliumSdk.getVersion(), adapterVersion)
+    }
+
+    /**
+     * Convert a given Chartboost error to a [HeliumErrorCode].
+     *
+     * @param error The Chartboost error to convert.
+     *
+     * @return The corresponding [HeliumErrorCode].
+     */
+    private fun getHeliumErrorCode(error: CBError) = when (error) {
+        is CacheError -> {
+            when (error.code) {
+                CacheError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumErrorCode.NO_CONNECTIVITY
+                CacheError.Code.NO_AD_FOUND -> HeliumErrorCode.NO_FILL
+                CacheError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                CacheError.Code.SERVER_ERROR -> HeliumErrorCode.SERVER_ERROR
+                else -> HeliumErrorCode.INTERNAL
+            }
+        }
+        is ShowError -> {
+            when (error.code) {
+                ShowError.Code.INTERNET_UNAVAILABLE -> HeliumErrorCode.NO_CONNECTIVITY
+                ShowError.Code.NO_CACHED_AD -> HeliumErrorCode.NO_FILL
+                ShowError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                else -> HeliumErrorCode.PARTNER_ERROR
+            }
+        }
+        else -> HeliumErrorCode.PARTNER_ERROR
     }
 }
