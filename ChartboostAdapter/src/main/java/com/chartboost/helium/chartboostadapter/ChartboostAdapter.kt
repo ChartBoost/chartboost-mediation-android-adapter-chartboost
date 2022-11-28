@@ -702,7 +702,7 @@ class ChartboostAdapter : PartnerAdapter {
                 CacheError.Code.NO_AD_FOUND -> HeliumErrorCode.NO_FILL
                 CacheError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
                 CacheError.Code.SERVER_ERROR -> HeliumErrorCode.SERVER_ERROR
-                else -> HeliumErrorCode.INTERNAL
+                else -> HeliumErrorCode.PARTNER_ERROR
             }
         }
         is ShowError -> {
