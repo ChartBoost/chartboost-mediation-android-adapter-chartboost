@@ -7,6 +7,6 @@ pluginManagement {
 }
 
 rootProject.name = "ChartboostAdapter"
-include ':ChartboostAdapter'
-include ':android-helium-sdk'
-include ':Helium'
+include(":ChartboostAdapter")
+include(":android-helium-sdk")
+include(":Helium")
