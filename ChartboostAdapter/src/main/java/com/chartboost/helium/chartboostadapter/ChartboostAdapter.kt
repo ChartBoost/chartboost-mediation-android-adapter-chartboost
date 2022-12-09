@@ -111,7 +111,7 @@ class ChartboostAdapter : PartnerAdapter {
                                 continuation.resume(
                                     Result.failure(
                                         HeliumAdException(
-                                            HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
+                                            getHeliumError(it),
                                         )
                                     )
                                 )
@@ -124,11 +124,11 @@ class ChartboostAdapter : PartnerAdapter {
                         }
                     } ?: run {
                         PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                        continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
+                        continuation.resumeWith(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
                     }
                 } ?: run {
                 PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
-                continuation.resumeWith(Result.failure(HeliumAdException(HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED)))
+                continuation.resumeWith(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
             }
         }
     }
@@ -330,7 +330,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "${it.code}")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
                         } ?: run {
                             // Render the Chartboost banner on Main thread immediately after ad loaded.
                             CoroutineScope(Main).launch {
@@ -432,7 +432,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
@@ -518,7 +518,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumErrorCode(error))))
+                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
@@ -600,7 +600,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(getHeliumErrorCode(error))
+                                HeliumAdException(getHeliumError(error))
                             )
                         )
                     }
@@ -608,11 +608,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Interstitial.")
-                Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+                Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -640,7 +640,7 @@ class ChartboostAdapter : PartnerAdapter {
                         )
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(getHeliumErrorCode(error))
+                                HeliumAdException(getHeliumError(error))
                             )
                         )
                     }
@@ -648,11 +648,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Rewarded.")
-                Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+                Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -672,11 +672,11 @@ class ChartboostAdapter : PartnerAdapter {
                 Result.success(partnerAd)
             } else {
                 PartnerLogController.log(INVALIDATE_FAILED, "Ad is not a Chartboost Banner.")
-                Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+                Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumErrorCode.INTERNAL))
+            Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -689,30 +689,37 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Convert a given Chartboost error to a [HeliumErrorCode].
+     * Convert a given Chartboost error to a [HeliumError].
      *
      * @param error The Chartboost error to convert.
      *
-     * @return The corresponding [HeliumErrorCode].
+     * @return The corresponding [HeliumError].
      */
-    private fun getHeliumErrorCode(error: CBError) = when (error) {
+    private fun getHeliumError(error: CBError) = when (error) {
+        is StartError -> {
+            when (error.code) {
+                StartError.Code.INVALID_CREDENTIALS -> HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS
+                StartError.Code.NETWORK_FAILURE -> HeliumError.HE_INITIALIZATION_FAILURE_NO_CONNECTIVITY
+                else -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
+            }
+        }
         is CacheError -> {
             when (error.code) {
-                CacheError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumErrorCode.NO_CONNECTIVITY
-                CacheError.Code.NO_AD_FOUND -> HeliumErrorCode.NO_FILL
-                CacheError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
-                CacheError.Code.SERVER_ERROR -> HeliumErrorCode.SERVER_ERROR
-                else -> HeliumErrorCode.PARTNER_ERROR
+                CacheError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumError.HE_NO_CONNECTIVITY
+                CacheError.Code.NO_AD_FOUND -> HeliumError.HE_LOAD_FAILURE_NO_FILL
+                CacheError.Code.SESSION_NOT_STARTED -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
+                CacheError.Code.SERVER_ERROR -> HeliumError.HE_AD_SERVER_ERROR
+                else -> HeliumError.HE_PARTNER_ERROR
             }
         }
         is ShowError -> {
             when (error.code) {
-                ShowError.Code.INTERNET_UNAVAILABLE -> HeliumErrorCode.NO_CONNECTIVITY
-                ShowError.Code.NO_CACHED_AD -> HeliumErrorCode.NO_FILL
-                ShowError.Code.SESSION_NOT_STARTED -> HeliumErrorCode.PARTNER_SDK_NOT_INITIALIZED
-                else -> HeliumErrorCode.PARTNER_ERROR
+                ShowError.Code.INTERNET_UNAVAILABLE -> HeliumError.HE_NO_CONNECTIVITY
+                ShowError.Code.NO_CACHED_AD -> HeliumError.HE_SHOW_FAILURE_AD_NOT_READY
+                ShowError.Code.SESSION_NOT_STARTED -> HeliumError.HE_SHOW_FAILURE_NOT_INITIALIZED
+                else -> HeliumError.HE_PARTNER_ERROR
             }
         }
-        else -> HeliumErrorCode.PARTNER_ERROR
+        else -> HeliumError.HE_UNKNOWN_ERROR
     }
 }
