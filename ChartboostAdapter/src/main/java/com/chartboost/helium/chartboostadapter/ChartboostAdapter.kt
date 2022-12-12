@@ -134,43 +134,53 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Chartboost does not have a public method as to whether GDPR applies.
-     * If anything was set previously for GDPR, it will be reset when gdpr does not apply.
+     * Notify the Chartboost SDK of the GDPR applicability and consent status.
      *
      * @param context The current [Context].
-     * @param gdprApplies True if GDPR applies, false otherwise.
+     * @param applies True if GDPR applies, false otherwise.
+     * @param gdprConsentStatus The user's GDPR consent status.
      */
-    override fun setGdprApplies(context: Context, gdprApplies: Boolean) {
-        PartnerLogController.log(if (gdprApplies) GDPR_APPLICABLE else GDPR_NOT_APPLICABLE)
+    override fun setGdpr(
+        context: Context,
+        applies: Boolean?,
+        gdprConsentStatus: GdprConsentStatus
+    ) {
+        PartnerLogController.log(
+            when (applies) {
+                true -> GDPR_APPLICABLE
+                false -> GDPR_NOT_APPLICABLE
+                else -> GDPR_UNKNOWN
+            }
+        )
 
-        if (!gdprApplies) {
+        PartnerLogController.log(
+            when (gdprConsentStatus) {
+                GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
+                GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
+                GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
+            }
+        )
+
+        // Chartboost does not have a public method as to whether GDPR applies.
+        // If anything was set previously for GDPR, it will be reset when GDPR no longer applies.
+        if (applies != true) {
             Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
         }
-    }
 
-    /**
-     * Notify Chartboost of user GDPR consent.
-     * @param context The current [Context].
-     * @param gdprConsentStatus The user's current GDPR consent status.
-     */
-    override fun setGdprConsentStatus(context: Context, gdprConsentStatus: GdprConsentStatus) {
         when (gdprConsentStatus) {
             GdprConsentStatus.GDPR_CONSENT_GRANTED -> {
-                PartnerLogController.log(GDPR_CONSENT_GRANTED)
                 Chartboost.addDataUseConsent(
                     context,
                     GDPR(GDPR.GDPR_CONSENT.BEHAVIORAL)
                 )
             }
             GdprConsentStatus.GDPR_CONSENT_DENIED -> {
-                PartnerLogController.log(GDPR_CONSENT_DENIED)
                 Chartboost.addDataUseConsent(
                     context,
                     GDPR(GDPR.GDPR_CONSENT.NON_BEHAVIORAL)
                 )
             }
             else -> {
-                PartnerLogController.log(GDPR_CONSENT_UNKNOWN)
                 Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
             }
         }
@@ -330,7 +340,15 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "${it.code}")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
+                            continuation.resume(
+                                Result.failure(
+                                    HeliumAdException(
+                                        getHeliumError(
+                                            error
+                                        )
+                                    )
+                                )
+                            )
                         } ?: run {
                             // Render the Chartboost banner on Main thread immediately after ad loaded.
                             CoroutineScope(Main).launch {
@@ -432,7 +450,15 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
+                            continuation.resume(
+                                Result.failure(
+                                    HeliumAdException(
+                                        getHeliumError(
+                                            error
+                                        )
+                                    )
+                                )
+                            )
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
@@ -518,7 +544,15 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(Result.failure(HeliumAdException(getHeliumError(error))))
+                            continuation.resume(
+                                Result.failure(
+                                    HeliumAdException(
+                                        getHeliumError(
+                                            error
+                                        )
+                                    )
+                                )
+                            )
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
                             continuation.resume(
