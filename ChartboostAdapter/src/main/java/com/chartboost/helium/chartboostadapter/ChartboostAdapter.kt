@@ -593,8 +593,7 @@ class ChartboostAdapter : PartnerAdapter {
                                 ad = event.ad,
                                 details = emptyMap(),
                                 request = request
-                            ),
-                            reward = Reward(event.reward, event.adID ?: "")
+                            )
                         )
                     }
                 },
