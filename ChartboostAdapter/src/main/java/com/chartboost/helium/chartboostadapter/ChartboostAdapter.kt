@@ -200,7 +200,7 @@ class ChartboostAdapter : PartnerAdapter {
     override fun setCcpaConsent(
         context: Context,
         hasGrantedCcpaConsent: Boolean,
-        privacyString: String?
+        privacyString: String
     ) {
         when (hasGrantedCcpaConsent) {
             true -> {
