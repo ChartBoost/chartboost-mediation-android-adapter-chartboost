@@ -247,7 +247,7 @@ class ChartboostAdapter : PartnerAdapter {
             val token = Chartboost.getBidderToken() ?: ""
             PartnerLogController.log(if (token.isEmpty()) BIDDER_INFO_FETCH_FAILED else BIDDER_INFO_FETCH_SUCCEEDED)
 
-            continuation.resume(mapOf("token" to token))
+            continuation.resume(mapOf("buyeruid" to token))
         }
     }
 
