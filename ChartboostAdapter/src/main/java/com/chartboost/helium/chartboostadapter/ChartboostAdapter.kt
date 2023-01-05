@@ -242,8 +242,13 @@ class ChartboostAdapter : PartnerAdapter {
         request: PreBidRequest
     ): Map<String, String> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
-        PartnerLogController.log(BIDDER_INFO_FETCH_SUCCEEDED)
-        return emptyMap()
+
+        return suspendCoroutine { continuation ->
+            val token = Chartboost.getBidderToken() ?: ""
+            PartnerLogController.log(if (token.isEmpty()) BIDDER_INFO_FETCH_FAILED else BIDDER_INFO_FETCH_SUCCEEDED)
+
+            continuation.resume(mapOf("token" to token))
+        }
     }
 
     /**
