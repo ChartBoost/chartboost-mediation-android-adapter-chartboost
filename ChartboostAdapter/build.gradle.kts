@@ -66,9 +66,9 @@ dependencies {
     // You may choose a different release version.
     // implementation("com.chartboost:chartboost-sdk:9.1.1")
 
-    // HB-4922: Using the internal 9.2.0 RC for pre-release testing with the bid token API
-    // TODO: Remove this local dependency when 9.2.0 is in prod
-    implementation(project(":chartboost-9.2.0-rc", "default"))
+    // HB-4922: Using a 9.2.0 RC for pre-release testing with the bid token API
+    // TODO: Remove this dependency when 9.2.0 is in prod
+    implementation("com.chartboost","chartboost-ads", "9.2.0-rc2", "", "", "aar")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
