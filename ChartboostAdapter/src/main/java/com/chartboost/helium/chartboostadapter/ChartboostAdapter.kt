@@ -737,16 +737,16 @@ class ChartboostAdapter : PartnerAdapter {
         is StartError -> {
             when (error.code) {
                 StartError.Code.INVALID_CREDENTIALS -> HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS
-                StartError.Code.NETWORK_FAILURE -> HeliumError.HE_INITIALIZATION_FAILURE_NO_CONNECTIVITY
+                StartError.Code.NETWORK_FAILURE -> HeliumError.HE_AD_SERVER_ERROR
                 else -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
             }
         }
         is CacheError -> {
             when (error.code) {
-                CacheError.Code.INTERNET_UNAVAILABLE, CacheError.Code.NETWORK_FAILURE -> HeliumError.HE_NO_CONNECTIVITY
+                CacheError.Code.INTERNET_UNAVAILABLE -> HeliumError.HE_NO_CONNECTIVITY
                 CacheError.Code.NO_AD_FOUND -> HeliumError.HE_LOAD_FAILURE_NO_FILL
                 CacheError.Code.SESSION_NOT_STARTED -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
-                CacheError.Code.SERVER_ERROR -> HeliumError.HE_AD_SERVER_ERROR
+                CacheError.Code.NETWORK_FAILURE, CacheError.Code.SERVER_ERROR -> HeliumError.HE_AD_SERVER_ERROR
                 else -> HeliumError.HE_PARTNER_ERROR
             }
         }
