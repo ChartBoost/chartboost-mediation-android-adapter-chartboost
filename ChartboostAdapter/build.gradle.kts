@@ -59,7 +59,6 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    // TODO: Change this to 4.+ when it's released
     "remoteImplementation"("com.chartboost:helium:4.+")
 
     // For external usage, please use the following production dependency.
