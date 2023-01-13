@@ -59,8 +59,7 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    // TODO: Change this to 4.+ when it's released
-    "remoteImplementation"("com.chartboost:helium:+")
+    "remoteImplementation"("com.chartboost:helium:4.+")
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
@@ -89,8 +88,12 @@ artifactory {
                 setRepoKey("private-helium")
             }
             // Set the environment variables for these to be able to push to artifactory.
-            setUsername(System.getenv("JFROG_USER"))
-            setPassword(System.getenv("JFROG_PASS"))
+            System.getenv("JFROG_USER")?.let{
+                setUsername(it)
+            }
+            System.getenv("JFROG_PASS")?.let{
+                setPassword(it)
+            }
         }
 
         defaults {
