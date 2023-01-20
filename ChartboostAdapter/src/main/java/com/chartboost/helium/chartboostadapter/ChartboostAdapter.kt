@@ -23,6 +23,9 @@ import com.chartboost.sdk.privacy.model.GDPR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -96,7 +99,9 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(SETUP_STARTED)
 
         return suspendCoroutine { continuation ->
-            partnerConfiguration.credentials.optString(APPLICATION_ID_KEY).trim()
+            Json.decodeFromJsonElement<String>(
+                (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY)
+            ).trim()
                 .takeIf { it.isNotEmpty() }?.let { appId ->
                     // The server does not provide the app signature. As Chartboost and Helium use
                     // the same app id and app signature, we can pass the app signature to Chartboost
