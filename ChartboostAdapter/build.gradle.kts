@@ -35,7 +35,7 @@ android {
         minSdk = 21
         targetSdk = 33
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.9.1.1.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.9.2.0.0"
         buildConfigField("String", "HELIUM_CHARTBOOST_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -71,11 +71,7 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    // implementation("com.chartboost:chartboost-sdk:9.1.1")
-
-    // HB-4922: Using a 9.2.0 RC for pre-release testing with the bid token API
-    // TODO: Remove this dependency when 9.2.0 is in prod
-    implementation("com.chartboost","donotdeploy-chartboost-ads", "9.2.0-rc3", "", "", "aar")
+    implementation("com.chartboost:chartboost-sdk:9.2.0")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
