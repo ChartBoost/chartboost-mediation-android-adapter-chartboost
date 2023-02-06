@@ -63,7 +63,6 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:+")
     "localImplementation"(project(":Helium"))
 
     // For external usage, please use the following production dependency.
