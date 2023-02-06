@@ -5,7 +5,7 @@
  * license that can be found in the LICENSE file.
  */
 
-package com.chartboost.helium.chartboostadapter
+package com.chartboost.mediation.chartboostadapter
 
 import android.content.Context
 import android.util.DisplayMetrics
@@ -27,9 +27,12 @@ import com.chartboost.sdk.events.*
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.GDPR
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -37,7 +40,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * The Helium Chartboost SDK adapter.
+ * The Chartboost Mediation Chartboost SDK adapter.
  */
 class ChartboostAdapter : PartnerAdapter {
     companion object {
@@ -68,16 +71,16 @@ class ChartboostAdapter : PartnerAdapter {
      * Get the Chartboost adapter version.
      *
      * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Helium:
+     * following format if the adapter will be published by Chartboost Mediation:
      *
-     * Helium.Partner.Adapter
+     * Chartboost Mediation.Partner.Adapter
      *
-     * "Helium" represents the Helium SDK’s major version that is compatible with this adapter. This must be 1 digit.
+     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
      * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
      * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
      */
     override val adapterVersion: String
-        get() = BuildConfig.HELIUM_CHARTBOOST_ADAPTER_VERSION
+        get() = BuildConfig.CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION
 
     /**
      * Get the partner name for internal uses.
@@ -110,9 +113,9 @@ class ChartboostAdapter : PartnerAdapter {
                 (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY)
             ).trim()
                 .takeIf { it.isNotEmpty() }?.let { appId ->
-                    // The server does not provide the app signature. As Chartboost and Helium use
-                    // the same app id and app signature, we can pass the app signature to Chartboost
-                    // from the Helium SDK.
+                    // The server does not provide the app signature. As Chartboost Monetization and
+                    // Chartboost Mediation use the same app id and app signature, we can pass the
+                    // app signature to Chartboost Monetization SDK from the Chartboost Mediation SDK.
                     HeliumSdk.getAppSignature()?.let { app_signature ->
                         Chartboost.setLoggingLevel(LoggingLevel.ALL)
 
@@ -126,8 +129,8 @@ class ChartboostAdapter : PartnerAdapter {
                                 PartnerLogController.log(SETUP_FAILED, "${it.code}")
                                 continuation.resume(
                                     Result.failure(
-                                        HeliumAdException(
-                                            getHeliumError(it),
+                                        ChartboostMediationAdException(
+                                            getChartboostMediationError(it),
                                         )
                                     )
                                 )
@@ -140,11 +143,11 @@ class ChartboostAdapter : PartnerAdapter {
                         }
                     } ?: run {
                         PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                        continuation.resumeWith(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
+                        continuation.resumeWith(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
                     }
                 } ?: run {
                 PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
-                continuation.resumeWith(Result.failure(HeliumAdException(HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
+                continuation.resumeWith(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
             }
         }
     }
@@ -267,7 +270,7 @@ class ChartboostAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -332,7 +335,7 @@ class ChartboostAdapter : PartnerAdapter {
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -363,8 +366,8 @@ class ChartboostAdapter : PartnerAdapter {
                             PartnerLogController.log(LOAD_FAILED, "${it.code}")
                             continuation.resume(
                                 Result.failure(
-                                    HeliumAdException(
-                                        getHeliumError(
+                                    ChartboostMediationAdException(
+                                        getChartboostMediationError(
                                             error
                                         )
                                     )
@@ -433,7 +436,7 @@ class ChartboostAdapter : PartnerAdapter {
      * Attempt to load a Chartboost interstitial ad.
      *
      * @param request An [PartnerAdLoadRequest] instance containing data to load the ad with.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -473,8 +476,8 @@ class ChartboostAdapter : PartnerAdapter {
                             PartnerLogController.log(LOAD_FAILED, "$error")
                             continuation.resume(
                                 Result.failure(
-                                    HeliumAdException(
-                                        getHeliumError(
+                                    ChartboostMediationAdException(
+                                        getChartboostMediationError(
                                             error
                                         )
                                     )
@@ -528,7 +531,7 @@ class ChartboostAdapter : PartnerAdapter {
      * Attempt to load a Chartboost rewarded ad.
      *
      * @param request The [PartnerAdLoadRequest] containing relevant data for the current ad load call.
-     * @param partnerAdListener A [PartnerAdListener] to notify Helium of ad events.
+     * @param partnerAdListener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
      *
      * @return Result.success(PartnerAd) if the ad was successfully loaded, Result.failure(Exception) otherwise.
      */
@@ -567,8 +570,8 @@ class ChartboostAdapter : PartnerAdapter {
                             PartnerLogController.log(LOAD_FAILED, "$error")
                             continuation.resume(
                                 Result.failure(
-                                    HeliumAdException(
-                                        getHeliumError(
+                                    ChartboostMediationAdException(
+                                        getChartboostMediationError(
                                             error
                                         )
                                     )
@@ -654,7 +657,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(getHeliumError(error))
+                                ChartboostMediationAdException(getChartboostMediationError(error))
                             )
                         )
                     }
@@ -662,11 +665,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Interstitial.")
-                Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -694,7 +697,7 @@ class ChartboostAdapter : PartnerAdapter {
                         )
                         continuation.resume(
                             Result.failure(
-                                HeliumAdException(getHeliumError(error))
+                                ChartboostMediationAdException(getChartboostMediationError(error))
                             )
                         )
                     }
@@ -702,11 +705,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Rewarded.")
-                Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumError.HE_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -726,11 +729,11 @@ class ChartboostAdapter : PartnerAdapter {
                 Result.success(partnerAd)
             } else {
                 PartnerLogController.log(INVALIDATE_FAILED, "Ad is not a Chartboost Banner.")
-                Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_WRONG_RESOURCE_TYPE))
             }
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(HeliumAdException(HeliumError.HE_INVALIDATE_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_AD_NOT_FOUND))
         }
     }
 
@@ -739,41 +742,41 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation {
-        return Mediation("Helium", HeliumSdk.getVersion(), adapterVersion)
+        return Mediation("Chartboost", HeliumSdk.getVersion(), adapterVersion)
     }
 
     /**
-     * Convert a given Chartboost error to a [HeliumError].
+     * Convert a given Chartboost error to a [ChartboostMediationError].
      *
      * @param error The Chartboost error to convert.
      *
-     * @return The corresponding [HeliumError].
+     * @return The corresponding [ChartboostMediationError].
      */
-    private fun getHeliumError(error: CBError) = when (error) {
+    private fun getChartboostMediationError(error: CBError) = when (error) {
         is StartError -> {
             when (error.code) {
-                StartError.Code.INVALID_CREDENTIALS -> HeliumError.HE_INITIALIZATION_FAILURE_INVALID_CREDENTIALS
-                StartError.Code.NETWORK_FAILURE -> HeliumError.HE_AD_SERVER_ERROR
-                else -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
+                StartError.Code.INVALID_CREDENTIALS -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS
+                StartError.Code.NETWORK_FAILURE -> ChartboostMediationError.CM_AD_SERVER_ERROR
+                else -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
             }
         }
         is CacheError -> {
             when (error.code) {
-                CacheError.Code.INTERNET_UNAVAILABLE -> HeliumError.HE_NO_CONNECTIVITY
-                CacheError.Code.NO_AD_FOUND -> HeliumError.HE_LOAD_FAILURE_NO_FILL
-                CacheError.Code.SESSION_NOT_STARTED -> HeliumError.HE_INITIALIZATION_FAILURE_UNKNOWN
-                CacheError.Code.NETWORK_FAILURE, CacheError.Code.SERVER_ERROR -> HeliumError.HE_AD_SERVER_ERROR
-                else -> HeliumError.HE_PARTNER_ERROR
+                CacheError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.CM_NO_CONNECTIVITY
+                CacheError.Code.NO_AD_FOUND -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
+                CacheError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
+                CacheError.Code.NETWORK_FAILURE, CacheError.Code.SERVER_ERROR -> ChartboostMediationError.CM_AD_SERVER_ERROR
+                else -> ChartboostMediationError.CM_PARTNER_ERROR
             }
         }
         is ShowError -> {
             when (error.code) {
-                ShowError.Code.INTERNET_UNAVAILABLE -> HeliumError.HE_NO_CONNECTIVITY
-                ShowError.Code.NO_CACHED_AD -> HeliumError.HE_SHOW_FAILURE_AD_NOT_READY
-                ShowError.Code.SESSION_NOT_STARTED -> HeliumError.HE_SHOW_FAILURE_NOT_INITIALIZED
-                else -> HeliumError.HE_PARTNER_ERROR
+                ShowError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.CM_NO_CONNECTIVITY
+                ShowError.Code.NO_CACHED_AD -> ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY
+                ShowError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.CM_SHOW_FAILURE_NOT_INITIALIZED
+                else -> ChartboostMediationError.CM_PARTNER_ERROR
             }
         }
-        else -> HeliumError.HE_UNKNOWN_ERROR
+        else -> ChartboostMediationError.CM_UNKNOWN_ERROR
     }
 }
