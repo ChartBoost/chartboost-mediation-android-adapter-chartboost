@@ -754,7 +754,7 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation {
-        return Mediation("Chartboost", HeliumSdk.getVersion(), adapterVersion)
+        return Mediation("Chartboost", HeliumSdk.version, adapterVersion)
     }
 
     /**
