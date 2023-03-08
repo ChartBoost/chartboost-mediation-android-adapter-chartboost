@@ -313,7 +313,7 @@ class ChartboostAdapter : PartnerAdapter {
             AdFormat.REWARDED -> showRewardedAd(partnerAd)
             AdFormat.REWARDED_INTERSTITIAL -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNSUPPORTED_AD_FORMAT))
             }
         }
     }
@@ -337,7 +337,7 @@ class ChartboostAdapter : PartnerAdapter {
             }
             AdFormat.REWARDED_INTERSTITIAL -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_UNSUPPORTED_AD_FORMAT))
             }
         }
     }
