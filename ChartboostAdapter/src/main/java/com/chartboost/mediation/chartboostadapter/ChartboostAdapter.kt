@@ -336,8 +336,8 @@ class ChartboostAdapter : PartnerAdapter {
                 Result.success(partnerAd)
             }
             else -> {
-                PartnerLogController.log(INVALIDATE_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_UNSUPPORTED_AD_FORMAT))
+                PartnerLogController.log(INVALIDATE_SUCCEEDED)
+                Result.success(partnerAd)
             }
         }
     }
