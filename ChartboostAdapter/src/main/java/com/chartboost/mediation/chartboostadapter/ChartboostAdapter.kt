@@ -37,7 +37,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * The Chartboost Mediation Chartboost SDK adapter.
@@ -108,7 +107,7 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<Unit> {
         PartnerLogController.log(SETUP_STARTED)
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             Json.decodeFromJsonElement<String>(
                 (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY)
             ).trim()
@@ -356,7 +355,7 @@ class ChartboostAdapter : PartnerAdapter {
         request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val chartboostBanner = Banner(
                 context,
                 request.partnerPlacement,
@@ -457,7 +456,7 @@ class ChartboostAdapter : PartnerAdapter {
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
 
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val chartboostInterstitial = Interstitial(
                 request.partnerPlacement,
                 object : InterstitialCallback {
@@ -551,7 +550,7 @@ class ChartboostAdapter : PartnerAdapter {
         request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val chartboostRewarded = Rewarded(
                 request.partnerPlacement,
                 object : RewardedCallback {
