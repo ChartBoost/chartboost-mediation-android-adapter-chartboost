@@ -24,6 +24,7 @@ repositories {
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/chartboost-ads/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
 }
 
@@ -35,7 +36,7 @@ android {
         minSdk = 21
         targetSdk = 33
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.9.2.1.2"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "4.9.3.0.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -71,7 +72,7 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    implementation("com.chartboost:chartboost-sdk:9.2.1")
+    implementation("com.chartboost:chartboost-sdk:9.3.0")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
