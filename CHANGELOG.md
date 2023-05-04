@@ -6,6 +6,9 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 ### 4.9.3.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.3.0.
 
+### 4.9.2.1.2
+- Prevents banner ads from getting stuck. Does not solve the underlying issue with Chartboost 9.2.1 that doesn't load a second bidding banner.
+
 ### 4.9.2.1.1
 - Updated the dependency on Chartboost Mediation SDK to 4.0.0.
 
