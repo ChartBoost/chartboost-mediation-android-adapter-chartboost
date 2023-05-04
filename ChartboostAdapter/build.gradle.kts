@@ -24,6 +24,7 @@ repositories {
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/chartboost-ads/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
 }
 
