@@ -13,7 +13,35 @@ import android.util.Size
 import com.chartboost.heliumsdk.HeliumSdk
 import com.chartboost.heliumsdk.domain.*
 import com.chartboost.heliumsdk.utils.PartnerLogController
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_STARTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_SUCCEEDED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.CCPA_CONSENT_DENIED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.CCPA_CONSENT_GRANTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.COPPA_NOT_SUBJECT
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.COPPA_SUBJECT
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_APPLICABLE
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_GRANTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_UNKNOWN
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_NOT_APPLICABLE
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_UNKNOWN
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_FAILED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_STARTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_SUCCEEDED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_FAILED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_STARTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_SUCCEEDED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_FAILED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_STARTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_SUCCEEDED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_FAILED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_STARTED
+import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_SUCCEEDED
 import com.chartboost.sdk.Chartboost
 import com.chartboost.sdk.LoggingLevel
 import com.chartboost.sdk.Mediation
@@ -108,6 +136,12 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(SETUP_STARTED)
 
         return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<Unit>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             Json.decodeFromJsonElement<String>(
                 (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY)
             ).trim()
@@ -126,7 +160,7 @@ class ChartboostAdapter : PartnerAdapter {
 
                             startError?.let {
                                 PartnerLogController.log(SETUP_FAILED, "${it.code}")
-                                continuation.resume(
+                                resumeOnce(
                                     Result.failure(
                                         ChartboostMediationAdException(
                                             getChartboostMediationError(it),
@@ -135,18 +169,18 @@ class ChartboostAdapter : PartnerAdapter {
                                 )
                             } ?: run {
                                 PartnerLogController.log(SETUP_SUCCEEDED)
-                                continuation.resume(
+                                resumeOnce(
                                     Result.success(PartnerLogController.log(SETUP_SUCCEEDED))
                                 )
                             }
                         }
                     } ?: run {
                         PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                        continuation.resumeWith(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
+                        resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
                     }
                 } ?: run {
                 PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
-                continuation.resumeWith(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
+                resumeOnce(Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)))
             }
         }
     }
@@ -356,6 +390,12 @@ class ChartboostAdapter : PartnerAdapter {
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             val chartboostBanner = Banner(
                 context,
                 request.partnerPlacement,
@@ -375,7 +415,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "${it.code}")
-                            continuation.resume(
+                            resumeOnce(
                                 Result.failure(
                                     ChartboostMediationAdException(
                                         getChartboostMediationError(
@@ -391,7 +431,7 @@ class ChartboostAdapter : PartnerAdapter {
                             }
 
                             PartnerLogController.log(LOAD_SUCCEEDED)
-                            continuation.resume(
+                            resumeOnce(
                                 Result.success(
                                     PartnerAd(
                                         ad = event.ad,
@@ -457,6 +497,12 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
 
         return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             val chartboostInterstitial = Interstitial(
                 request.partnerPlacement,
                 object : InterstitialCallback {
@@ -485,7 +531,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(
+                            resumeOnce(
                                 Result.failure(
                                     ChartboostMediationAdException(
                                         getChartboostMediationError(
@@ -496,7 +542,7 @@ class ChartboostAdapter : PartnerAdapter {
                             )
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
-                            continuation.resume(
+                            resumeOnce(
                                 Result.success(
                                     PartnerAd(
                                         ad = event.ad,
@@ -551,6 +597,12 @@ class ChartboostAdapter : PartnerAdapter {
         partnerAdListener: PartnerAdListener
     ): Result<PartnerAd> {
         return suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<PartnerAd>) {
+                if (continuation.isActive) {
+                    continuation.resume(result)
+                }
+            }
+
             val chartboostRewarded = Rewarded(
                 request.partnerPlacement,
                 object : RewardedCallback {
@@ -579,7 +631,7 @@ class ChartboostAdapter : PartnerAdapter {
                     override fun onAdLoaded(event: CacheEvent, error: CacheError?) {
                         error?.let {
                             PartnerLogController.log(LOAD_FAILED, "$error")
-                            continuation.resume(
+                            resumeOnce(
                                 Result.failure(
                                     ChartboostMediationAdException(
                                         getChartboostMediationError(
@@ -590,7 +642,7 @@ class ChartboostAdapter : PartnerAdapter {
                             )
                         } ?: run {
                             PartnerLogController.log(LOAD_SUCCEEDED)
-                            continuation.resume(
+                            resumeOnce(
                                 Result.success(
                                     PartnerAd(
                                         ad = event.ad,
@@ -656,9 +708,14 @@ class ChartboostAdapter : PartnerAdapter {
         return (partnerAd.ad)?.let { ad ->
             (ad as? Interstitial)?.let {
                 suspendCancellableCoroutine { continuation ->
+                    fun resumeOnce(result: Result<PartnerAd>) {
+                        if (continuation.isActive) {
+                            continuation.resume(result)
+                        }
+                    }
                     onShowSuccess = {
                         PartnerLogController.log(SHOW_SUCCEEDED)
-                        continuation.resume(Result.success(partnerAd))
+                        resumeOnce(Result.success(partnerAd))
                     }
 
                     onShowError = { event, error ->
@@ -666,7 +723,7 @@ class ChartboostAdapter : PartnerAdapter {
                             SHOW_FAILED, "Location: ${event.ad.location}. Error: ${error.code}"
                         )
 
-                        continuation.resume(
+                        resumeOnce(
                             Result.failure(
                                 ChartboostMediationAdException(getChartboostMediationError(error))
                             )
@@ -697,16 +754,22 @@ class ChartboostAdapter : PartnerAdapter {
         return (partnerAd.ad)?.let { ad ->
             (ad as? Rewarded)?.let {
                 suspendCancellableCoroutine { continuation ->
+                    fun resumeOnce(result: Result<PartnerAd>) {
+                        if (continuation.isActive) {
+                            continuation.resume(result)
+                        }
+                    }
+
                     onShowSuccess = {
                         PartnerLogController.log(SHOW_SUCCEEDED)
-                        continuation.resume(Result.success(partnerAd))
+                        resumeOnce(Result.success(partnerAd))
                     }
 
                     onShowError = { event, error ->
                         PartnerLogController.log(
                             SHOW_FAILED, "Location: ${event.ad.location}. Error: ${error.code}"
                         )
-                        continuation.resume(
+                        resumeOnce(
                             Result.failure(
                                 ChartboostMediationAdException(getChartboostMediationError(error))
                             )
