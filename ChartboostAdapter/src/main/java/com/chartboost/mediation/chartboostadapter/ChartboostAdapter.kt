@@ -287,7 +287,7 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(LOAD_STARTED)
 
         return when (request.format) {
-            AdFormat.BANNER -> loadBannerAd(context, request, partnerAdListener)
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> loadBannerAd(context, request, partnerAdListener)
             AdFormat.INTERSTITIAL -> loadInterstitialAd(request, partnerAdListener)
             AdFormat.REWARDED -> loadRewardedAd(request, partnerAdListener)
             else -> {
@@ -309,7 +309,7 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(SHOW_STARTED)
 
         return when (partnerAd.request.format) {
-            AdFormat.BANNER -> {
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> {
                 // Banner ads do not have a separate "show" mechanism.
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
@@ -334,7 +334,7 @@ class ChartboostAdapter : PartnerAdapter {
         PartnerLogController.log(INVALIDATE_STARTED)
 
         return when (partnerAd.request.format) {
-            AdFormat.BANNER -> destroyBannerAd(partnerAd)
+            AdFormat.BANNER, AdFormat.ADAPTIVE_BANNER -> destroyBannerAd(partnerAd)
             AdFormat.INTERSTITIAL, AdFormat.REWARDED -> {
                 // Chartboost does not have destroy methods for their fullscreen ads.
                 PartnerLogController.log(INVALIDATE_SUCCEEDED)
