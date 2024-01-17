@@ -1,6 +1,6 @@
 /*
  * Copyright 2022-2023 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -55,7 +55,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -96,10 +96,10 @@ artifactory {
                 setRepoKey("private-chartboost-mediation")
             }
             // Set the environment variables for these to be able to push to artifactory.
-            System.getenv("JFROG_USER")?.let{
+            System.getenv("JFROG_USER")?.let {
                 setUsername(it)
             }
-            System.getenv("JFROG_PASS")?.let{
+            System.getenv("JFROG_PASS")?.let {
                 setPassword(it)
             }
         }
@@ -121,11 +121,12 @@ afterEvaluate {
                 val adapterName = "chartboost"
                 groupId = "com.chartboost"
                 artifactId = "chartboost-mediation-adapter-$adapterName"
-                version = if (project.hasProperty("snapshot")) {
-                    android.defaultConfig.versionName + rootProject.ext["SNAPSHOT"]
-                } else {
-                    android.defaultConfig.versionName
-                }
+                version =
+                    if (project.hasProperty("snapshot")) {
+                        android.defaultConfig.versionName + rootProject.ext["SNAPSHOT"]
+                    } else {
+                        android.defaultConfig.versionName
+                    }
 
                 pom {
                     name.set("Chartboost Mediation Adapter Chartboost")
