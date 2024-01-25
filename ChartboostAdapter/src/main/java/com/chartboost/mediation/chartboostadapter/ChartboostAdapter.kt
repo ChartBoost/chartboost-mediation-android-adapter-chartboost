@@ -540,7 +540,7 @@ class ChartboostAdapter : PartnerAdapter {
                     request.partnerPlacement,
                     InterstitialAdCallback(
                         request,
-                        WeakReference(partnerAdListener),
+                        partnerAdListener,
                         WeakReference(continuation),
                     ),
                     setMediation(),
@@ -572,7 +572,7 @@ class ChartboostAdapter : PartnerAdapter {
                     request.partnerPlacement,
                     RewardedAdCallback(
                         request,
-                        WeakReference(partnerAdListener),
+                        partnerAdListener,
                         WeakReference(continuation),
                     ),
                     setMediation(),
@@ -725,12 +725,12 @@ class ChartboostAdapter : PartnerAdapter {
  * Callback implementation for Chartboost interstitial ad events.
  *
  * @param request The [PartnerAdLoadRequest] containing relevant data for the current ad load call.
- * @param listenerRef A [WeakReference] to the [PartnerAdListener] to notify Chartboost Mediation of ad events.
+ * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
  * @param continuationRef A [WeakReference] to the [CancellableContinuation] to resume once the ad has loaded.
  */
 private class InterstitialAdCallback(
     private val request: PartnerAdLoadRequest,
-    private val listenerRef: WeakReference<PartnerAdListener>,
+    private val listener: PartnerAdListener,
     private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
 ) : InterstitialCallback {
     override fun onAdClicked(
@@ -739,30 +739,26 @@ private class InterstitialAdCallback(
     ) {
         PartnerLogController.log(DID_CLICK)
 
-        listenerRef.get()?.onPartnerAdClicked(
+        listener.onPartnerAdClicked(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdClicked. Listener is null.")
-        }
+        )
     }
 
     override fun onAdDismiss(event: DismissEvent) {
         PartnerLogController.log(DID_DISMISS)
 
-        listenerRef.get()?.onPartnerAdDismissed(
+        listener.onPartnerAdDismissed(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
             null,
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdDismissed. Listener is null.")
-        }
+        )
     }
 
     override fun onAdLoaded(
@@ -822,15 +818,13 @@ private class InterstitialAdCallback(
     override fun onImpressionRecorded(event: ImpressionEvent) {
         PartnerLogController.log(DID_TRACK_IMPRESSION)
 
-        listenerRef.get()?.onPartnerAdImpression(
+        listener.onPartnerAdImpression(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdImpression. Listener is null.")
-        }
+        )
     }
 }
 
@@ -838,12 +832,12 @@ private class InterstitialAdCallback(
  * Callback implementation for Chartboost rewarded ad events.
  *
  * @param request The [PartnerAdLoadRequest] containing relevant data for the current ad load call.
- * @param listenerRef A [WeakReference] to the [PartnerAdListener] to notify Chartboost Mediation of ad events.
+ * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
  * @param continuationRef A [WeakReference] to the [CancellableContinuation] to resume once the ad has loaded.
  */
 private class RewardedAdCallback(
     private val request: PartnerAdLoadRequest,
-    private val listenerRef: WeakReference<PartnerAdListener>,
+    private val listener: PartnerAdListener,
     private val continuationRef: WeakReference<CancellableContinuation<Result<PartnerAd>>>,
 ) : RewardedCallback {
     override fun onAdClicked(
@@ -852,30 +846,26 @@ private class RewardedAdCallback(
     ) {
         PartnerLogController.log(DID_CLICK)
 
-        listenerRef.get()?.onPartnerAdClicked(
+        listener.onPartnerAdClicked(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdClicked. Listener is null.")
-        }
+        )
     }
 
     override fun onAdDismiss(event: DismissEvent) {
         PartnerLogController.log(DID_DISMISS)
 
-        listenerRef.get()?.onPartnerAdDismissed(
+        listener.onPartnerAdDismissed(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
             null,
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdDismissed. Listener is null.")
-        }
+        )
     }
 
     override fun onAdLoaded(
@@ -935,28 +925,24 @@ private class RewardedAdCallback(
     override fun onImpressionRecorded(event: ImpressionEvent) {
         PartnerLogController.log(DID_TRACK_IMPRESSION)
 
-        listenerRef.get()?.onPartnerAdImpression(
+        listener.onPartnerAdImpression(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdImpression. Listener is null.")
-        }
+        )
     }
 
     override fun onRewardEarned(event: RewardEvent) {
         PartnerLogController.log(DID_REWARD)
 
-        listenerRef.get()?.onPartnerAdRewarded(
+        listener.onPartnerAdRewarded(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
                 request = request,
             ),
-        ) ?: run {
-            PartnerLogController.log(CUSTOM, "Unable to fire onPartnerAdRewarded. Listener is null.")
-        }
+        )
     }
 }
