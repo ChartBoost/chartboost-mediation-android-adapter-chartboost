@@ -812,7 +812,11 @@ private class InterstitialAdCallback(
     ) {
         error?.let {
             onShowError(event, it)
-        } ?: onShowSuccess()
+            onShowError = { _: ShowEvent, _: ShowError -> }
+        } ?: run {
+            onShowSuccess()
+            onShowSuccess = {}
+        }
     }
 
     override fun onImpressionRecorded(event: ImpressionEvent) {
@@ -919,7 +923,11 @@ private class RewardedAdCallback(
     ) {
         error?.let {
             onShowError(event, it)
-        } ?: onShowSuccess()
+            onShowError = { _: ShowEvent, _: ShowError -> }
+        } ?: run {
+            onShowSuccess()
+            onShowSuccess = {}
+        }
     }
 
     override fun onImpressionRecorded(event: ImpressionEvent) {
