@@ -1,6 +1,6 @@
 /*
  * Copyright 2023-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -10,10 +10,10 @@ package com.chartboost.mediation.chartboostadapter
 import android.content.Context
 import android.util.DisplayMetrics
 import android.util.Size
-import com.chartboost.heliumsdk.HeliumSdk
-import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.PartnerLogController
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
+import com.chartboost.chartboostmediationsdk.domain.*
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.*
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.getChartboostMediationError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowSuccess
@@ -162,7 +162,7 @@ class ChartboostAdapter : PartnerAdapter {
                     // The server does not provide the app signature. As Chartboost Monetization and
                     // Chartboost Mediation use the same app id and app signature, we can pass the
                     // app signature to Chartboost Monetization SDK from the Chartboost Mediation SDK.
-                    HeliumSdk.getAppSignature()?.let { app_signature ->
+                    ChartboostMediationSdk.getAppSignature()?.let { app_signature ->
                         Chartboost.setLoggingLevel(LoggingLevel.ALL)
 
                         Chartboost.startWithAppId(
@@ -717,7 +717,7 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation {
-        return Mediation("Chartboost", HeliumSdk.getVersion(), adapterVersion)
+        return Mediation("Chartboost", ChartboostMediationSdk.getVersion(), adapterVersion)
     }
 }
 

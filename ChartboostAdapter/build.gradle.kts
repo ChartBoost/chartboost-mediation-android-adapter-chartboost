@@ -1,6 +1,6 @@
 /*
  * Copyright 2022-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -66,7 +66,7 @@ android {
 }
 
 dependencies {
-    "localImplementation"(project(":Helium"))
+    "localImplementation"(project(":ChartboostMediation"))
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
