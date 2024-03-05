@@ -100,6 +100,11 @@ class ChartboostAdapter : PartnerAdapter {
          * Key for parsing the Chartboost SDK application ID.
          */
         private const val APPLICATION_ID_KEY = "app_id"
+
+        /**
+         * Key for parsing the Chartboost SDK application signature.
+         */
+        private const val APPLICATION_SIGNATURE_KEY = "app_signature"
     }
 
     /**
@@ -149,6 +154,9 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<Unit> {
         PartnerLogController.log(SETUP_STARTED)
 
+        val credentials = partnerConfiguration.credentials
+        val (appId, appSignature) = extractPartnerConfigs(credentials)
+
         return suspendCancellableCoroutine { continuation ->
             fun resumeOnce(result: Result<Unit>) {
                 if (continuation.isActive) {
@@ -156,51 +164,20 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             }
 
-            Json.decodeFromJsonElement<String>(
-                (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY),
-            ).trim()
-                .takeIf { it.isNotEmpty() }?.let { appId ->
-                    // The server does not provide the app signature. As Chartboost Monetization and
-                    // Chartboost Mediation use the same app id and app signature, we can pass the
-                    // app signature to Chartboost Monetization SDK from the Chartboost Mediation SDK.
-                    ChartboostMediationSdk.getAppSignature()?.let { app_signature ->
-                        Chartboost.setLoggingLevel(LoggingLevel.ALL)
-
-                        Chartboost.startWithAppId(
-                            context.applicationContext,
-                            appId,
-                            app_signature,
-                        ) { startError ->
-
-                            startError?.let {
-                                PartnerLogController.log(SETUP_FAILED, "${it.code}")
-                                resumeOnce(
-                                    Result.failure(
-                                        ChartboostMediationAdException(
-                                            getChartboostMediationError(it),
-                                        ),
-                                    ),
-                                )
-                            } ?: run {
-                                PartnerLogController.log(SETUP_SUCCEEDED)
-                                resumeOnce(
-                                    Result.success(PartnerLogController.log(SETUP_SUCCEEDED)),
-                                )
-                            }
-                        }
-                    } ?: run {
-                        PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                        resumeOnce(
-                            Result.failure(
-                                ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS),
-                            ),
-                        )
-                    }
-                } ?: run {
-                PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
+            if (appId.isNullOrEmpty() || appSignature.isNullOrEmpty()) {
+                PartnerLogController.log(SETUP_FAILED, "Missing app ID or app signature.")
                 resumeOnce(
                     Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)),
                 )
+                return@suspendCancellableCoroutine
+            }
+
+            Chartboost.setLoggingLevel(LoggingLevel.ALL)
+            Chartboost.startWithAppId(context.applicationContext, appId, appSignature) { error ->
+                error?.let {
+                    PartnerLogController.log(SETUP_FAILED, "${it.code}")
+                    resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(it))))
+                } ?: resumeOnce(Result.success(PartnerLogController.log(SETUP_SUCCEEDED)))
             }
         }
     }
@@ -719,6 +696,43 @@ class ChartboostAdapter : PartnerAdapter {
      */
     private fun setMediation(): Mediation {
         return Mediation("Chartboost", ChartboostMediationSdk.getVersion(), adapterVersion)
+    }
+
+    /**
+     * Extract the Chartboost partner configurations from the given credentials.
+     *
+     * @param credentials The credentials to extract the Chartboost partner configurations from.
+     *
+     * @return A Pair containing the extracted Chartboost app ID and app signature.
+     */
+    private fun extractPartnerConfigs(credentials: JsonObject): Pair<String?, String?> {
+        val appId = extractPartnerConfig(APPLICATION_ID_KEY, credentials)
+        val appSignature = extractPartnerConfig(APPLICATION_SIGNATURE_KEY, credentials)
+
+        return Pair(appId, appSignature)
+    }
+
+    /**
+     * Extract a partner configuration value from the given credentials.
+     *
+     * @param key The key to extract from the credentials.
+     * @param credentials The credentials to extract the value from.
+     *
+     * @return The extracted value, or null if the key or value is not found.
+     */
+    private fun extractPartnerConfig(
+        key: String,
+        credentials: JsonObject,
+    ): String? {
+        val element =
+            credentials[key] ?: return null.also {
+                PartnerLogController.log(SETUP_FAILED, "No value found for $key.")
+            }
+
+        return Json.decodeFromJsonElement<String>(element)
+            .trim()
+            .takeIf { it.isNotEmpty() }
+            .also { if (it == null) PartnerLogController.log(SETUP_FAILED, "No value found for $key.") }
     }
 }
 
