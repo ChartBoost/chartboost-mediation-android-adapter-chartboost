@@ -1,0 +1,38 @@
+name: Create Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      adapter_version:
+        description: 'Adapter version (e.g. 4.9.2.0.0)'
+        required: true
+      partner_version:
+        description: 'Partner version (e.g. 9.2.0)'
+        required: true
+  repository_dispatch:
+    types: [create-release-branch]
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      # Since this workflow could be triggered by a user publicly or the internal cron job, we need to set the versions appropriately.
+      - name: Set versions
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Workflow was triggered by a user"
+            echo "ADAPTER_VERSION=${{ github.event.inputs.adapter_version }}" >> $GITHUB_ENV
+            echo "PARTNER_VERSION=${{ github.event.inputs.partner_version }}" >> $GITHUB_ENV
+          elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "Workflow was triggered by a repository dispatch"
+            echo "ADAPTER_VERSION=${{ github.event.client_payload.adapter_version }}" >> $GITHUB_ENV
+            echo "PARTNER_VERSION=${{ github.event.client_payload.partner_version }}" >> $GITHUB_ENV
+          fi
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUBSERVICETOKEN }}
+          repository: ChartBoost/chartboost-mediation-android-actions
+          event-type: update-versions
+          client-payload: '{"adapter_version": "${{ env.ADAPTER_VERSION }}", "partner_version": "${{ env.PARTNER_VERSION }}", "repository": "${{ github.repository }}", "token": "${{ secrets.GITHUBSERVICETOKEN }}"}'
