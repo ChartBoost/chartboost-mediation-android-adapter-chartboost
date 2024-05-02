@@ -108,37 +108,9 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Get the Chartboost SDK version.
+     * The Chartboost adapter configuration.
      */
-    override val partnerSdkVersion: String
-        get() = Chartboost.getSDKVersion()
-
-    /**
-     * Get the Chartboost adapter version.
-     *
-     * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Chartboost Mediation:
-     *
-     * Chartboost Mediation.Partner.Adapter
-     *
-     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
-     * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
-     * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
-     */
-    override val adapterVersion: String
-        get() = BuildConfig.CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION
-
-    /**
-     * Get the partner name for internal uses.
-     */
-    override val partnerId: String
-        get() = "chartboost"
-
-    /**
-     * Get the partner name for external uses.
-     */
-    override val partnerDisplayName: String
-        get() = "Chartboost"
+    override var configuration: PartnerAdapterConfiguration = ChartboostAdapterConfiguration
 
     /**
      * Initialize the Chartboost SDK so that it is ready to request ads.
@@ -695,7 +667,7 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation {
-        return Mediation("Chartboost", ChartboostMediationSdk.getVersion(), adapterVersion)
+        return Mediation("Chartboost", ChartboostMediationSdk.getVersion(), configuration.adapterVersion)
     }
 
     /**
