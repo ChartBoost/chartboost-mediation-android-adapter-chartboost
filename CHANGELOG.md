@@ -3,7 +3,8 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
-### 5.9.6.1.0
+### 5.9.7.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.7.0.
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
 
 ### 4.9.6.1.1
