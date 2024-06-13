@@ -13,7 +13,7 @@ The Chartboost Mediation Chartboost adapter mediates Chartboost via the Chartboo
 
 In your `build.gradle`, add the following entry:
 ```
-    implementation "com.chartboost:chartboost-mediation-adapter-chartboost:4.9.7.0.0"
+    implementation "com.chartboost:chartboost-mediation-adapter-chartboost:4.9.7.0.1"
 ```
 
 ## Contributions

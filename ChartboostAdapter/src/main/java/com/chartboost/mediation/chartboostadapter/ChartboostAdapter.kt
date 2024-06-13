@@ -145,10 +145,10 @@ class ChartboostAdapter : PartnerAdapter {
     override suspend fun setUp(
         context: Context,
         partnerConfiguration: PartnerConfiguration,
-    ): Result<Unit> {
+    ): Result<Unit> = withContext(IO) {
         PartnerLogController.log(SETUP_STARTED)
 
-        return suspendCancellableCoroutine { continuation ->
+        return@withContext suspendCancellableCoroutine { continuation ->
             fun resumeOnce(result: Result<Unit>) {
                 if (continuation.isActive) {
                     continuation.resume(result)
