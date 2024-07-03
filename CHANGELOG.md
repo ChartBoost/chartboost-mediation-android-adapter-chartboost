@@ -7,6 +7,12 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 - This version of the adapter has been certified with Chartboost SDK 9.7.0.
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
 
+### 4.9.7.0.1
+- Runs setUp() on IO context to reduce possibility of ANR terminations.
+
+### 4.9.7.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.7.0.
+
 ### 4.9.6.1.1
 - Fix memory leaks that could occur when fullscreen ads are shown from an `Activity`.
 
