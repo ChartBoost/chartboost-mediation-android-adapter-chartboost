@@ -147,13 +147,14 @@ class ChartboostAdapter : PartnerAdapter {
     override suspend fun setUp(
         context: Context,
         partnerConfiguration: PartnerConfiguration,
-    ): Result<Map<String, Any>> {
+
+    ): Result<Map<String, Any>> = withContext(IO) {
         PartnerLogController.log(SETUP_STARTED)
 
         val credentials = partnerConfiguration.credentials
         val (appId, appSignature) = extractPartnerConfigs(credentials)
 
-        return suspendCancellableCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             fun resumeOnce(result: Result<Map<String, Any>>) {
                 if (continuation.isActive) {
                     continuation.resume(result)
