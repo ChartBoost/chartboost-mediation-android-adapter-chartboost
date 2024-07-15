@@ -42,7 +42,10 @@ import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerA
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_UNDERAGE
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_DENIED
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_GRANTED
-import com.chartboost.core.consent.*
+import com.chartboost.core.consent.ConsentKey
+import com.chartboost.core.consent.ConsentKeys
+import com.chartboost.core.consent.ConsentValue
+import com.chartboost.core.consent.ConsentValues
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.getChartboostMediationError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowSuccess
@@ -58,6 +61,7 @@ import com.chartboost.sdk.callbacks.RewardedCallback
 import com.chartboost.sdk.events.*
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
+import com.chartboost.sdk.privacy.model.Custom
 import com.chartboost.sdk.privacy.model.GDPR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
@@ -310,7 +314,9 @@ class ChartboostAdapter : PartnerAdapter {
         consents: Map<ConsentKey, ConsentValue>,
         modifiedKeys: Set<ConsentKey>,
     ) {
-        consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.let {
+        val consent = consents[configuration.partnerId]?.takeIf { it.isNotBlank() }
+            ?: consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.takeIf { it.isNotBlank() }
+        consent?.let {
             if (it == ConsentValues.DOES_NOT_APPLY) {
                 PartnerLogController.log(GDPR_NOT_APPLICABLE)
                 // Chartboost does not have a public method as to whether GDPR applies.
@@ -344,19 +350,24 @@ class ChartboostAdapter : PartnerAdapter {
                     Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
                 }
             }
-        }
+        } ?: Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
 
         consents[ConsentKeys.USP]?.let {
-            val hasGrantedUspConsent = ConsentManagementPlatform.getUspConsentFromUspString(it)
-            when (hasGrantedUspConsent) {
-                true -> {
+            Chartboost.addDataUseConsent(context, Custom(CCPA.CCPA_STANDARD, it))
+        }
+
+        consents[ConsentKeys.CCPA_OPT_IN]?.let {
+            when (it) {
+                ConsentValues.GRANTED -> {
                     PartnerLogController.log(USP_CONSENT_GRANTED)
                     Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_IN_SALE))
                 }
-                false -> {
+                ConsentValues.DENIED -> {
                     PartnerLogController.log(USP_CONSENT_DENIED)
                     Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
                 }
+                else -> PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
+
             }
         }
     }
