@@ -12,6 +12,7 @@ import android.content.Context
 import android.util.DisplayMetrics
 import android.util.Size
 import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
+import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize.Companion.asSize
 import com.chartboost.chartboostmediationsdk.domain.*
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
@@ -63,9 +64,13 @@ import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.Custom
 import com.chartboost.sdk.privacy.model.GDPR
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -397,7 +402,7 @@ class ChartboostAdapter : PartnerAdapter {
                 Banner(
                     context,
                     request.partnerPlacement,
-                    getChartboostAdSize(request.bannerSize?.size),
+                    getChartboostAdSize(request.bannerSize?.asSize()),
                     object : BannerCallback {
                         override fun onAdClicked(
                             event: ClickEvent,
