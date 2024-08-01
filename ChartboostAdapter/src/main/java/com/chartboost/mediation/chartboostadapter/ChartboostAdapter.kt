@@ -1,19 +1,52 @@
 /*
  * Copyright 2023-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
 
 package com.chartboost.mediation.chartboostadapter
 
+import android.app.Activity
 import android.content.Context
 import android.util.DisplayMetrics
 import android.util.Size
-import com.chartboost.heliumsdk.HeliumSdk
-import com.chartboost.heliumsdk.domain.*
-import com.chartboost.heliumsdk.utils.PartnerLogController
-import com.chartboost.heliumsdk.utils.PartnerLogController.PartnerAdapterEvents.*
+import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
+import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize.Companion.asSize
+import com.chartboost.chartboostmediationsdk.domain.*
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_GRANTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_UNKNOWN
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_NOT_APPLICABLE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.INVALIDATE_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.LOAD_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SETUP_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_FAILED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_STARTED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.SHOW_SUCCEEDED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_NOT_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USER_IS_UNDERAGE
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_DENIED
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.USP_CONSENT_GRANTED
+import com.chartboost.core.consent.ConsentKey
+import com.chartboost.core.consent.ConsentKeys
+import com.chartboost.core.consent.ConsentValue
+import com.chartboost.core.consent.ConsentValues
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.getChartboostMediationError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowError
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.onShowSuccess
@@ -29,6 +62,7 @@ import com.chartboost.sdk.callbacks.RewardedCallback
 import com.chartboost.sdk.events.*
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
+import com.chartboost.sdk.privacy.model.Custom
 import com.chartboost.sdk.privacy.model.GDPR
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
@@ -59,29 +93,29 @@ class ChartboostAdapter : PartnerAdapter {
             when (error) {
                 is StartError -> {
                     when (error.code) {
-                        StartError.Code.INVALID_CREDENTIALS -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS
-                        StartError.Code.NETWORK_FAILURE -> ChartboostMediationError.CM_AD_SERVER_ERROR
-                        else -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
+                        StartError.Code.INVALID_CREDENTIALS -> ChartboostMediationError.InitializationError.InvalidCredentials
+                        StartError.Code.NETWORK_FAILURE -> ChartboostMediationError.OtherError.AdServerError
+                        else -> ChartboostMediationError.InitializationError.Unknown
                     }
                 }
                 is CacheError -> {
                     when (error.code) {
-                        CacheError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.CM_NO_CONNECTIVITY
-                        CacheError.Code.NO_AD_FOUND -> ChartboostMediationError.CM_LOAD_FAILURE_NO_FILL
-                        CacheError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.CM_INITIALIZATION_FAILURE_UNKNOWN
-                        CacheError.Code.NETWORK_FAILURE, CacheError.Code.SERVER_ERROR -> ChartboostMediationError.CM_AD_SERVER_ERROR
-                        else -> ChartboostMediationError.CM_PARTNER_ERROR
+                        CacheError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.OtherError.NoConnectivity
+                        CacheError.Code.NO_AD_FOUND -> ChartboostMediationError.LoadError.NoFill
+                        CacheError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.InitializationError.Unknown
+                        CacheError.Code.NETWORK_FAILURE, CacheError.Code.SERVER_ERROR -> ChartboostMediationError.OtherError.AdServerError
+                        else -> ChartboostMediationError.OtherError.PartnerError
                     }
                 }
                 is ShowError -> {
                     when (error.code) {
-                        ShowError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.CM_NO_CONNECTIVITY
-                        ShowError.Code.NO_CACHED_AD -> ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_READY
-                        ShowError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.CM_SHOW_FAILURE_NOT_INITIALIZED
-                        else -> ChartboostMediationError.CM_PARTNER_ERROR
+                        ShowError.Code.INTERNET_UNAVAILABLE -> ChartboostMediationError.OtherError.NoConnectivity
+                        ShowError.Code.NO_CACHED_AD -> ChartboostMediationError.ShowError.AdNotReady
+                        ShowError.Code.SESSION_NOT_STARTED -> ChartboostMediationError.ShowError.NotInitialized
+                        else -> ChartboostMediationError.OtherError.PartnerError
                     }
                 }
-                else -> ChartboostMediationError.CM_UNKNOWN_ERROR
+                else -> ChartboostMediationError.OtherError.Unknown
             }
 
         /**
@@ -99,40 +133,17 @@ class ChartboostAdapter : PartnerAdapter {
          * Key for parsing the Chartboost SDK application ID.
          */
         private const val APPLICATION_ID_KEY = "app_id"
+
+        /**
+         * Key for parsing the Chartboost SDK application signature.
+         */
+        private const val APPLICATION_SIGNATURE_KEY = "app_signature"
     }
 
     /**
-     * Get the Chartboost SDK version.
+     * The Chartboost adapter configuration.
      */
-    override val partnerSdkVersion: String
-        get() = Chartboost.getSDKVersion()
-
-    /**
-     * Get the Chartboost adapter version.
-     *
-     * You may version the adapter using any preferred convention, but it is recommended to apply the
-     * following format if the adapter will be published by Chartboost Mediation:
-     *
-     * Chartboost Mediation.Partner.Adapter
-     *
-     * "Chartboost Mediation" represents the Chartboost Mediation SDK’s major version that is compatible with this adapter. This must be 1 digit.
-     * "Partner" represents the partner SDK’s major.minor.patch.x (where x is optional) version that is compatible with this adapter. This can be 3-4 digits.
-     * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
-     */
-    override val adapterVersion: String
-        get() = BuildConfig.CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION
-
-    /**
-     * Get the partner name for internal uses.
-     */
-    override val partnerId: String
-        get() = "chartboost"
-
-    /**
-     * Get the partner name for external uses.
-     */
-    override val partnerDisplayName: String
-        get() = "Chartboost"
+    override var configuration: PartnerAdapterConfiguration = ChartboostAdapterConfiguration
 
     /**
      * Initialize the Chartboost SDK so that it is ready to request ads.
@@ -145,137 +156,37 @@ class ChartboostAdapter : PartnerAdapter {
     override suspend fun setUp(
         context: Context,
         partnerConfiguration: PartnerConfiguration,
-    ): Result<Unit> = withContext(IO) {
+
+    ): Result<Map<String, Any>> = withContext(IO) {
         PartnerLogController.log(SETUP_STARTED)
 
-        return@withContext suspendCancellableCoroutine { continuation ->
-            fun resumeOnce(result: Result<Unit>) {
+        val credentials = partnerConfiguration.credentials
+        val (appId, appSignature) = extractPartnerConfigs(credentials)
+
+        suspendCancellableCoroutine { continuation ->
+            fun resumeOnce(result: Result<Map<String, Any>>) {
                 if (continuation.isActive) {
                     continuation.resume(result)
                 }
             }
 
-            Json.decodeFromJsonElement<String>(
-                (partnerConfiguration.credentials as JsonObject).getValue(APPLICATION_ID_KEY),
-            ).trim()
-                .takeIf { it.isNotEmpty() }?.let { appId ->
-                    // The server does not provide the app signature. As Chartboost Monetization and
-                    // Chartboost Mediation use the same app id and app signature, we can pass the
-                    // app signature to Chartboost Monetization SDK from the Chartboost Mediation SDK.
-                    HeliumSdk.getAppSignature()?.let { app_signature ->
-                        Chartboost.setLoggingLevel(LoggingLevel.ALL)
-
-                        Chartboost.startWithAppId(
-                            context.applicationContext,
-                            appId,
-                            app_signature,
-                        ) { startError ->
-
-                            startError?.let {
-                                PartnerLogController.log(SETUP_FAILED, "${it.code}")
-                                resumeOnce(
-                                    Result.failure(
-                                        ChartboostMediationAdException(
-                                            getChartboostMediationError(it),
-                                        ),
-                                    ),
-                                )
-                            } ?: run {
-                                PartnerLogController.log(SETUP_SUCCEEDED)
-                                resumeOnce(
-                                    Result.success(PartnerLogController.log(SETUP_SUCCEEDED)),
-                                )
-                            }
-                        }
-                    } ?: run {
-                        PartnerLogController.log(SETUP_FAILED, "Missing application signature.")
-                        resumeOnce(
-                            Result.failure(
-                                ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS),
-                            ),
-                        )
-                    }
-                } ?: run {
-                PartnerLogController.log(SETUP_FAILED, "Missing application ID.")
+            if (appId.isNullOrEmpty() || appSignature.isNullOrEmpty()) {
+                PartnerLogController.log(SETUP_FAILED, "Missing app ID or app signature.")
                 resumeOnce(
-                    Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INITIALIZATION_FAILURE_INVALID_CREDENTIALS)),
+                    Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.InvalidCredentials)),
                 )
+                return@suspendCancellableCoroutine
             }
-        }
-    }
 
-    /**
-     * Notify the Chartboost SDK of the GDPR applicability and consent status.
-     *
-     * @param context The current [Context].
-     * @param applies True if GDPR applies, false otherwise.
-     * @param gdprConsentStatus The user's GDPR consent status.
-     */
-    override fun setGdpr(
-        context: Context,
-        applies: Boolean?,
-        gdprConsentStatus: GdprConsentStatus,
-    ) {
-        PartnerLogController.log(
-            when (applies) {
-                true -> GDPR_APPLICABLE
-                false -> GDPR_NOT_APPLICABLE
-                else -> GDPR_UNKNOWN
-            },
-        )
-
-        PartnerLogController.log(
-            when (gdprConsentStatus) {
-                GdprConsentStatus.GDPR_CONSENT_UNKNOWN -> GDPR_CONSENT_UNKNOWN
-                GdprConsentStatus.GDPR_CONSENT_GRANTED -> GDPR_CONSENT_GRANTED
-                GdprConsentStatus.GDPR_CONSENT_DENIED -> GDPR_CONSENT_DENIED
-            },
-        )
-
-        // Chartboost does not have a public method as to whether GDPR applies.
-        // If anything was set previously for GDPR, it will be reset when GDPR no longer applies.
-        if (applies != true) {
-            Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
-        }
-
-        when (gdprConsentStatus) {
-            GdprConsentStatus.GDPR_CONSENT_GRANTED -> {
-                Chartboost.addDataUseConsent(
-                    context,
-                    GDPR(GDPR.GDPR_CONSENT.BEHAVIORAL),
-                )
-            }
-            GdprConsentStatus.GDPR_CONSENT_DENIED -> {
-                Chartboost.addDataUseConsent(
-                    context,
-                    GDPR(GDPR.GDPR_CONSENT.NON_BEHAVIORAL),
-                )
-            }
-            else -> {
-                Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
-            }
-        }
-    }
-
-    /**
-     * Notify Chartboost of the CCPA compliance.
-     * @param context The current [Context].
-     * @param hasGrantedCcpaConsent True if the user has granted CCPA consent, false otherwise.
-     * @param privacyString The CCPA privacy String.
-     */
-    override fun setCcpaConsent(
-        context: Context,
-        hasGrantedCcpaConsent: Boolean,
-        privacyString: String,
-    ) {
-        when (hasGrantedCcpaConsent) {
-            true -> {
-                PartnerLogController.log(CCPA_CONSENT_GRANTED)
-                Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_IN_SALE))
-            }
-            false -> {
-                PartnerLogController.log(CCPA_CONSENT_DENIED)
-                Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
+            Chartboost.setLoggingLevel(LoggingLevel.ALL)
+            Chartboost.startWithAppId(context.applicationContext, appId, appSignature) { error ->
+                error?.let {
+                    PartnerLogController.log(SETUP_FAILED, "${it.code}")
+                    resumeOnce(Result.failure(ChartboostMediationAdException(getChartboostMediationError(it))))
+                } ?: run {
+                    PartnerLogController.log(SETUP_SUCCEEDED)
+                    resumeOnce(Result.success(emptyMap()))
+                }
             }
         }
     }
@@ -284,42 +195,42 @@ class ChartboostAdapter : PartnerAdapter {
      * Notify Chartboost of the COPPA subjectivity.
      *
      * @param context The current [Context].
-     * @param isSubjectToCoppa True if the user is subject to COPPA, false otherwise.
+     * @param isUserUnderage True if the user is subject to COPPA, false otherwise.
      */
-    override fun setUserSubjectToCoppa(
+    override fun setIsUserUnderage(
         context: Context,
-        isSubjectToCoppa: Boolean,
+        isUserUnderage: Boolean,
     ) {
         PartnerLogController.log(
-            if (isSubjectToCoppa) {
-                COPPA_SUBJECT
+            if (isUserUnderage) {
+                USER_IS_UNDERAGE
             } else {
-                COPPA_NOT_SUBJECT
+                USER_IS_NOT_UNDERAGE
             },
         )
 
-        Chartboost.addDataUseConsent(context, COPPA(isSubjectToCoppa))
+        Chartboost.addDataUseConsent(context, COPPA(isUserUnderage))
     }
 
     /**
      * Get a bid token if network bidding is supported.
      *
      * @param context The current [Context].
-     * @param request The [PreBidRequest] instance containing relevant data for the current bid request.
+     * @param request The [PartnerAdPreBidRequest] instance containing relevant data for the current bid request.
      *
      * @return A Map of biddable token Strings.
      */
     override suspend fun fetchBidderInformation(
         context: Context,
-        request: PreBidRequest,
-    ): Map<String, String> {
+        request: PartnerAdPreBidRequest,
+    ): Result<Map<String, String>> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
 
         return withContext(IO) {
             val token = Chartboost.getBidderToken() ?: ""
             PartnerLogController.log(if (token.isEmpty()) BIDDER_INFO_FETCH_FAILED else BIDDER_INFO_FETCH_SUCCEEDED)
 
-            mapOf("buyeruid" to token)
+            Result.success(mapOf("buyeruid" to token))
         }
     }
 
@@ -339,13 +250,13 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<PartnerAd> {
         PartnerLogController.log(LOAD_STARTED)
 
-        return when (request.format.key) {
-            AdFormat.BANNER.key, "adaptive_banner" -> loadBannerAd(context, request, partnerAdListener)
-            AdFormat.INTERSTITIAL.key -> loadInterstitialAd(request, partnerAdListener)
-            AdFormat.REWARDED.key -> loadRewardedAd(request, partnerAdListener)
+        return when (request.format) {
+            PartnerAdFormats.BANNER -> loadBannerAd(context, request, partnerAdListener)
+            PartnerAdFormats.INTERSTITIAL -> loadInterstitialAd(request, partnerAdListener)
+            PartnerAdFormats.REWARDED -> loadRewardedAd(request, partnerAdListener)
             else -> {
                 PartnerLogController.log(LOAD_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_LOAD_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.UnsupportedAdFormat))
             }
         }
     }
@@ -353,28 +264,28 @@ class ChartboostAdapter : PartnerAdapter {
     /**
      * Attempt to show the currently loaded Chartboost ad.
      *
-     * @param context The current [Context]
+     * @param activity The current [Activity]
      * @param partnerAd The [PartnerAd] object containing the Chartboost ad to be shown.
      *
      * @return Result.success(PartnerAd) if the ad was successfully shown, Result.failure(Exception) otherwise.
      */
     override suspend fun show(
-        context: Context,
+        activity: Activity,
         partnerAd: PartnerAd,
     ): Result<PartnerAd> {
         PartnerLogController.log(SHOW_STARTED)
 
-        return when (partnerAd.request.format.key) {
-            AdFormat.BANNER.key, "adaptive_banner" -> {
+        return when (partnerAd.request.format) {
+            PartnerAdFormats.BANNER -> {
                 // Banner ads do not have a separate "show" mechanism.
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
-            AdFormat.INTERSTITIAL.key -> showInterstitialAd(partnerAd)
-            AdFormat.REWARDED.key -> showRewardedAd(partnerAd)
+            PartnerAdFormats.INTERSTITIAL -> showInterstitialAd(partnerAd)
+            PartnerAdFormats.REWARDED -> showRewardedAd(partnerAd)
             else -> {
                 PartnerLogController.log(SHOW_FAILED)
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_UNSUPPORTED_AD_FORMAT))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.UnsupportedAdFormat))
             }
         }
     }
@@ -389,9 +300,9 @@ class ChartboostAdapter : PartnerAdapter {
     override suspend fun invalidate(partnerAd: PartnerAd): Result<PartnerAd> {
         PartnerLogController.log(INVALIDATE_STARTED)
 
-        return when (partnerAd.request.format.key) {
-            AdFormat.BANNER.key, "adaptive_banner" -> destroyBannerAd(partnerAd)
-            AdFormat.INTERSTITIAL.key, AdFormat.REWARDED.key -> {
+        return when (partnerAd.request.format) {
+            PartnerAdFormats.BANNER -> destroyBannerAd(partnerAd)
+            PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED -> {
                 // Chartboost does not have destroy methods for their fullscreen ads.
                 PartnerLogController.log(INVALIDATE_SUCCEEDED)
                 Result.success(partnerAd)
@@ -399,6 +310,69 @@ class ChartboostAdapter : PartnerAdapter {
             else -> {
                 PartnerLogController.log(INVALIDATE_SUCCEEDED)
                 Result.success(partnerAd)
+            }
+        }
+    }
+
+    override fun setConsents(
+        context: Context,
+        consents: Map<ConsentKey, ConsentValue>,
+        modifiedKeys: Set<ConsentKey>,
+    ) {
+        val consent = consents[configuration.partnerId]?.takeIf { it.isNotBlank() }
+            ?: consents[ConsentKeys.GDPR_CONSENT_GIVEN]?.takeIf { it.isNotBlank() }
+        consent?.let {
+            if (it == ConsentValues.DOES_NOT_APPLY) {
+                PartnerLogController.log(GDPR_NOT_APPLICABLE)
+                // Chartboost does not have a public method as to whether GDPR applies.
+                // If anything was set previously for GDPR, it will be reset when GDPR no longer applies.
+                Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+                return@let
+            }
+
+            PartnerLogController.log(
+                when (it) {
+                    ConsentValues.GRANTED -> GDPR_CONSENT_GRANTED
+                    ConsentValues.DENIED -> GDPR_CONSENT_DENIED
+                    else -> GDPR_CONSENT_UNKNOWN
+                },
+            )
+
+            when (it) {
+                ConsentValues.GRANTED -> {
+                    Chartboost.addDataUseConsent(
+                        context,
+                        GDPR(GDPR.GDPR_CONSENT.BEHAVIORAL),
+                    )
+                }
+                ConsentValues.DENIED -> {
+                    Chartboost.addDataUseConsent(
+                        context,
+                        GDPR(GDPR.GDPR_CONSENT.NON_BEHAVIORAL),
+                    )
+                }
+                else -> {
+                    Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+                }
+            }
+        } ?: Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+
+        consents[ConsentKeys.USP]?.let {
+            Chartboost.addDataUseConsent(context, Custom(CCPA.CCPA_STANDARD, it))
+        }
+
+        consents[ConsentKeys.CCPA_OPT_IN]?.let {
+            when (it) {
+                ConsentValues.GRANTED -> {
+                    PartnerLogController.log(USP_CONSENT_GRANTED)
+                    Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_IN_SALE))
+                }
+                ConsentValues.DENIED -> {
+                    PartnerLogController.log(USP_CONSENT_DENIED)
+                    Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
+                }
+                else -> PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
+
             }
         }
     }
@@ -428,7 +402,7 @@ class ChartboostAdapter : PartnerAdapter {
                 Banner(
                     context,
                     request.partnerPlacement,
-                    getChartboostAdSize(request.size),
+                    getChartboostAdSize(request.bannerSize?.asSize()),
                     object : BannerCallback {
                         override fun onAdClicked(
                             event: ClickEvent,
@@ -629,11 +603,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Interstitial.")
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.WrongResourceType))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotFound))
         }
     }
 
@@ -680,11 +654,11 @@ class ChartboostAdapter : PartnerAdapter {
                 }
             } ?: run {
                 PartnerLogController.log(SHOW_FAILED, "Ad is not Rewarded.")
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.WrongResourceType))
             }
         } ?: run {
             PartnerLogController.log(SHOW_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_SHOW_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.ShowError.AdNotFound))
         }
     }
 
@@ -704,11 +678,11 @@ class ChartboostAdapter : PartnerAdapter {
                 Result.success(partnerAd)
             } else {
                 PartnerLogController.log(INVALIDATE_FAILED, "Ad is not a Chartboost Banner.")
-                Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_WRONG_RESOURCE_TYPE))
+                Result.failure(ChartboostMediationAdException(ChartboostMediationError.InvalidateError.WrongResourceType))
             }
         } ?: run {
             PartnerLogController.log(INVALIDATE_FAILED, "Ad is null.")
-            Result.failure(ChartboostMediationAdException(ChartboostMediationError.CM_INVALIDATE_FAILURE_AD_NOT_FOUND))
+            Result.failure(ChartboostMediationAdException(ChartboostMediationError.InvalidateError.AdNotFound))
         }
     }
 
@@ -717,7 +691,44 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation {
-        return Mediation("Chartboost", HeliumSdk.getVersion(), adapterVersion)
+        return Mediation("Chartboost", ChartboostMediationSdk.getVersion(), configuration.adapterVersion)
+    }
+
+    /**
+     * Extract the Chartboost partner configurations from the given credentials.
+     *
+     * @param credentials The credentials to extract the Chartboost partner configurations from.
+     *
+     * @return A Pair containing the extracted Chartboost app ID and app signature.
+     */
+    private fun extractPartnerConfigs(credentials: JsonObject): Pair<String?, String?> {
+        val appId = extractPartnerConfig(APPLICATION_ID_KEY, credentials)
+        val appSignature = extractPartnerConfig(APPLICATION_SIGNATURE_KEY, credentials)
+
+        return Pair(appId, appSignature)
+    }
+
+    /**
+     * Extract a partner configuration value from the given credentials.
+     *
+     * @param key The key to extract from the credentials.
+     * @param credentials The credentials to extract the value from.
+     *
+     * @return The extracted value, or null if the key or value is not found.
+     */
+    private fun extractPartnerConfig(
+        key: String,
+        credentials: JsonObject,
+    ): String? {
+        val element =
+            credentials[key] ?: return null.also {
+                PartnerLogController.log(SETUP_FAILED, "No value found for $key.")
+            }
+
+        return Json.decodeFromJsonElement<String>(element)
+            .trim()
+            .takeIf { it.isNotEmpty() }
+            .also { if (it == null) PartnerLogController.log(SETUP_FAILED, "No value found for $key.") }
     }
 }
 

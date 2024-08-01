@@ -32,7 +32,7 @@ Follow these guides to create a detailed and effective report for us to understa
 * **If the problem wasn't triggered by a specific action**, describe what you were doing before the problem happened.
 
 ### Pull Requests
-In order to submit pull requests, you are required to review and sign the [Contribution License Agreement (CLA)](https://developers.chartboost.com/docs/mediation-contribution-license-agreement) which is available on the Chartboost website to view. Once you have read the agreement, sign the appropriate form depending on whether you are an individual an employer contributor.
+In order to submit pull requests, you are required to review and sign the [Contribution License Agreement (CLA)](https://docs.chartboost.com/en/partners/contribution-license-agreement/) which is available on the Chartboost website to view. Once you have read the agreement, sign the appropriate form depending on whether you are an individual an employer contributor.
 
 - [Individual contributor license agreement form](https://na3.docusign.net/Member/PowerFormSigning.aspx?PowerFormId=159c66e8-610c-4afc-9330-15bc2217c291&env=na3&acct=9c982e12-8675-45df-9d81-95fe3656e695&v=2).
 _You wish to contribute on your own behalf as an individual._
@@ -43,7 +43,7 @@ _You wish to contribute on behalf of your employer._
 #### Submitting a Pull Request
 Follow these steps to have your contribution considered by the maintainers:
 
-1. Review and sign the [Contribution License Agreement (CLA)](https://developers.chartboost.com/docs/mediation-contribution-license-agreement).
+1. Review and sign the [Contribution License Agreement (CLA)](https://docs.chartboost.com/en/partners/contribution-license-agreement/).
 2. Identify the issue related to your fix. If an issue doesn't exist, then create a new issue.
 3. Create a pull request. 
 4. Format the title starting with the issue number, followed by a brief description of the fox. _Example: `[ISSUE-60] Fix null pointer exception`._

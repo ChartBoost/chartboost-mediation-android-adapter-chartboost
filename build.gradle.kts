@@ -1,6 +1,6 @@
 /*
  * Copyright 2022-2024 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -13,11 +13,11 @@ buildscript {
 }
 
 plugins {
-    id("com.android.application") version "7.4.1" apply false
-    id("com.android.library") version "7.4.1" apply false
-    id("org.jetbrains.kotlin.android") version "1.7.20" apply false
+    id("com.android.application") version "8.2.2" apply false
+    id("com.android.library") version "8.2.2" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.21" apply false
 
-    kotlin("plugin.serialization") version "1.7.20"
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 task<Delete>("clean") {
