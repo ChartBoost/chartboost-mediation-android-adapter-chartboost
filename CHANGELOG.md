@@ -1,11 +1,21 @@
-## Changelog
+# Changelog
 
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
+All official releases can be found on this repository's [releases page](https://github.com/ChartBoost/chartboost-mediation-android-adapter-chartboost/releases).
+
+## Table of Contents
+- [Mediation 5](#mediation-5)
+- [Mediation 4](#mediation-4)
+
+## Mediation 5
+
 ### 5.9.7.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.7.0.
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
+
+## Mediation 4
 
 ### 4.9.7.0.1
 - Runs setUp() on IO context to reduce possibility of ANR terminations.
