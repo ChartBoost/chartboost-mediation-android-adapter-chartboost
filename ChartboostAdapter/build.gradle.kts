@@ -85,15 +85,15 @@ android {
 
 dependencies {
     "localImplementation"(project(":ChartboostMediation"))
+    "localImplementation"(project(":ChartboostMonetization"))
 
-    // For external usage, please use the following production dependency.
+    // For external usage, please use the following production dependencies.
     // You may choose a different release version.
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
+    "remoteImplementation"("com.chartboost:chartboost-sdk:9.7.0")
 
-    // For external usage, please use the following production dependency.
-    // You may choose a different release version.
-    implementation("com.chartboost:chartboost-sdk:9.7.0")
+    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
+    "candidateImplementation"("com.chartboost:chartboost-sdk:9.7.0")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")

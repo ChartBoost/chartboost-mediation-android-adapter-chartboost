@@ -17,3 +17,4 @@ rootProject.name = "ChartboostAdapter"
 include(":ChartboostAdapter")
 include(":android-helium-sdk")
 include(":ChartboostMediation")
+include(":ChartboostMonetization")
