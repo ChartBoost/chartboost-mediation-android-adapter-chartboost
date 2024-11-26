@@ -236,6 +236,7 @@ class ChartboostAdapter : PartnerAdapter {
         // If anything was set previously for GDPR, it will be reset when GDPR no longer applies.
         if (applies != true) {
             Chartboost.clearDataUseConsent(context, GDPR.GDPR_STANDARD)
+            return
         }
 
         when (gdprConsentStatus) {
