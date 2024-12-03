@@ -3,8 +3,11 @@
 Note the first digit of every adapter version corresponds to the major version of the Chartboost Mediation SDK compatible with that adapter. 
 Adapters are compatible with any Chartboost Mediation SDK version within that major version.
 
-### 4.9.7.0.2
+### 4.9.8.0.1
 - Fixed potential consent issue.
+
+### 4.9.8.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.0.
 
 ### 4.9.7.0.1
 - Runs setUp() on IO context to reduce possibility of ANR terminations.
