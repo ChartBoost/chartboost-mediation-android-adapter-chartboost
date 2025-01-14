@@ -43,7 +43,7 @@ android {
         minSdk = 21
         targetSdk = 34
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.9.7.0.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.9.8.1.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         consumerProguardFiles("proguard-rules.pro")
@@ -90,10 +90,10 @@ dependencies {
     // For external usage, please use the following production dependencies.
     // You may choose a different release version.
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "remoteImplementation"("com.chartboost:chartboost-sdk:9.7.0")
+    "remoteImplementation"("com.chartboost:chartboost-sdk:9.8.1")
 
     "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "candidateImplementation"("com.chartboost:chartboost-sdk:9.7.0")
+    "candidateImplementation"("com.chartboost:chartboost-sdk:9.8.1")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")

@@ -221,7 +221,7 @@ class ChartboostAdapter : PartnerAdapter {
      * @return A Map of biddable token Strings.
      */
     override suspend fun fetchBidderInformation(
-        context: Context,
+        context: Context ,
         request: PartnerAdPreBidRequest,
     ): Result<Map<String, String>> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
