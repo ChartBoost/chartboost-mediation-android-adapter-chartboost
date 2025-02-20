@@ -14,6 +14,9 @@ All official releases can be found on this repository's [releases page](https://
 ### 5.9.8.3.0
 - This version of the adapter has been certified with Chartboost SDK 9.8.3.
 
+### 5.9.8.2.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.2.
+
 ### 5.9.8.1.0
 - This version of the adapter has been certified with Chartboost SDK 9.8.1.
 
