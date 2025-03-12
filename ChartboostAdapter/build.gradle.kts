@@ -81,7 +81,7 @@ dependencies {
     implementation("com.chartboost:chartboost-sdk:9.8.3")
 
     // Partner SDK Dependencies
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 }
 
