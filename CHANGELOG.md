@@ -6,6 +6,12 @@ Adapters are compatible with any Chartboost Mediation SDK version within that ma
 ### 4.9.8.3.0
 - This version of the adapter has been certified with Chartboost SDK 9.8.3
 
+### 4.9.8.0.1
+- Fixed potential consent issue.
+
+### 4.9.8.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.0.
+
 ### 4.9.7.0.2
 - Fixed potential consent issue.
 
