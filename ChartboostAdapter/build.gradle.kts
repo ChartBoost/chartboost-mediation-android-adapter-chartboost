@@ -92,8 +92,8 @@ dependencies {
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
     "remoteImplementation"("com.chartboost:chartboost-sdk:9.7.0")
 
-    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "candidateImplementation"("com.chartboost:chartboost-sdk:9.7.0")
+    "candidateImplementation"(project(":ChartboostMonetization"))
+    "candidateImplementation"(project(":ChartboostMonetization"))
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
