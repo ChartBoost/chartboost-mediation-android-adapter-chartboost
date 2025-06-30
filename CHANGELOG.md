@@ -11,6 +11,9 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.9.9.0.1
+- Handle ad expirations.
+
 ### 5.9.9.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.9.0.
 

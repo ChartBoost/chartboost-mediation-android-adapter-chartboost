@@ -21,6 +21,7 @@ import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerA
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_EXPIRE
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
@@ -60,6 +61,7 @@ import com.chartboost.sdk.callbacks.BannerCallback
 import com.chartboost.sdk.callbacks.InterstitialCallback
 import com.chartboost.sdk.callbacks.RewardedCallback
 import com.chartboost.sdk.events.*
+import com.chartboost.sdk.impl.z7
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.Custom
@@ -469,6 +471,18 @@ class ChartboostAdapter : PartnerAdapter {
                                 ),
                             )
                         }
+
+                        override fun onAdExpired(event: z7) {
+                            PartnerLogController.log(DID_EXPIRE)
+
+                            partnerAdListener.onPartnerAdExpired(
+                                PartnerAd(
+                                    ad = event.a(),
+                                    details = emptyMap(),
+                                    request = request,
+                                ),
+                            )
+                        }
                     },
                     setMediation(),
                 )
@@ -841,6 +855,18 @@ private class InterstitialAdCallback(
             ),
         )
     }
+
+    override fun onAdExpired(event: z7) {
+        PartnerLogController.log(DID_EXPIRE)
+
+        listener.onPartnerAdExpired(
+            PartnerAd(
+                ad = event.a(),
+                details = emptyMap(),
+                request = request,
+            ),
+        )
+    }
 }
 
 /**
@@ -959,6 +985,18 @@ private class RewardedAdCallback(
         listener.onPartnerAdRewarded(
             PartnerAd(
                 ad = event.ad,
+                details = emptyMap(),
+                request = request,
+            ),
+        )
+    }
+
+    override fun onAdExpired(event: z7) {
+        PartnerLogController.log(DID_EXPIRE)
+
+        listener.onPartnerAdExpired(
+            PartnerAd(
+                ad = event.a(),
                 details = emptyMap(),
                 request = request,
             ),
