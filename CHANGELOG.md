@@ -11,6 +11,10 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.9.9.1.0
+- This version of the adapter has been certified with Chartboost SDK 9.9.1.
+- `onAdExpired()` added to ad callbacks.
+
 ### 5.9.9.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.9.0.
 
