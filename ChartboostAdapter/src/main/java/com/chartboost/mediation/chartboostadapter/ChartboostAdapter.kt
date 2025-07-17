@@ -13,7 +13,16 @@ import android.util.DisplayMetrics
 import android.util.Size
 import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize.Companion.asSize
-import com.chartboost.chartboostmediationsdk.domain.*
+import com.chartboost.chartboostmediationsdk.domain.ChartboostMediationAdException
+import com.chartboost.chartboostmediationsdk.domain.ChartboostMediationError
+import com.chartboost.chartboostmediationsdk.domain.PartnerAd
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdFormats
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdListener
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdLoadRequest
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdPreBidRequest
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdapter
+import com.chartboost.chartboostmediationsdk.domain.PartnerAdapterConfiguration
+import com.chartboost.chartboostmediationsdk.domain.PartnerConfiguration
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_FAILED
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.BIDDER_INFO_FETCH_STARTED
@@ -21,6 +30,7 @@ import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerA
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.CUSTOM
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_CLICK
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_DISMISS
+import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_EXPIRE
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_REWARD
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.DID_TRACK_IMPRESSION
 import com.chartboost.chartboostmediationsdk.utils.PartnerLogController.PartnerAdapterEvents.GDPR_CONSENT_DENIED
@@ -59,7 +69,18 @@ import com.chartboost.sdk.ads.Rewarded
 import com.chartboost.sdk.callbacks.BannerCallback
 import com.chartboost.sdk.callbacks.InterstitialCallback
 import com.chartboost.sdk.callbacks.RewardedCallback
-import com.chartboost.sdk.events.*
+import com.chartboost.sdk.events.CBError
+import com.chartboost.sdk.events.CacheError
+import com.chartboost.sdk.events.CacheEvent
+import com.chartboost.sdk.events.ClickError
+import com.chartboost.sdk.events.ClickEvent
+import com.chartboost.sdk.events.DismissEvent
+import com.chartboost.sdk.events.ExpirationEvent
+import com.chartboost.sdk.events.ImpressionEvent
+import com.chartboost.sdk.events.RewardEvent
+import com.chartboost.sdk.events.ShowError
+import com.chartboost.sdk.events.ShowEvent
+import com.chartboost.sdk.events.StartError
 import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.Custom
@@ -469,6 +490,18 @@ class ChartboostAdapter : PartnerAdapter {
                                 ),
                             )
                         }
+
+                        override fun onAdExpired(event: ExpirationEvent) {
+                            PartnerLogController.log(DID_EXPIRE)
+
+                            partnerAdListener.onPartnerAdExpired(
+                                PartnerAd(
+                                    ad = event.ad,
+                                    details = emptyMap(),
+                                    request = request,
+                                ),
+                            )
+                        }
                     },
                     setMediation(),
                 )
@@ -841,6 +874,18 @@ private class InterstitialAdCallback(
             ),
         )
     }
+
+    override fun onAdExpired(event: ExpirationEvent) {
+        PartnerLogController.log(DID_EXPIRE)
+
+        listener.onPartnerAdExpired(
+            PartnerAd(
+                ad = event.ad,
+                details = emptyMap(),
+                request = request,
+            ),
+        )
+    }
 }
 
 /**
@@ -957,6 +1002,18 @@ private class RewardedAdCallback(
         PartnerLogController.log(DID_REWARD)
 
         listener.onPartnerAdRewarded(
+            PartnerAd(
+                ad = event.ad,
+                details = emptyMap(),
+                request = request,
+            ),
+        )
+    }
+
+    override fun onAdExpired(event: ExpirationEvent) {
+        PartnerLogController.log(DID_EXPIRE)
+
+        listener.onPartnerAdExpired(
             PartnerAd(
                 ad = event.ad,
                 details = emptyMap(),
