@@ -11,11 +11,33 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.9.9.1.0
+- This version of the adapter has been certified with Chartboost SDK 9.9.1.
+- `onAdExpired()` added to ad callbacks.
+
+### 5.9.9.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.9.0.
+
+### 5.9.8.3.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.3.
+
+### 5.9.8.2.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.2.
+
+### 5.9.8.1.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.1.
+
+### 5.9.8.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.0.
+
 ### 5.9.7.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.7.0.
 - This version of the adapter supports Chartboost Mediation SDK version 5.+.
 
 ## Mediation 4
+
+### 4.9.8.0.0
+- This version of the adapter has been certified with Chartboost SDK 9.8.0.
 
 ### 4.9.7.0.1
 - Runs setUp() on IO context to reduce possibility of ANR terminations.

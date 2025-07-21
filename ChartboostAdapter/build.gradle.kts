@@ -1,6 +1,6 @@
 /*
- * Copyright 2022-2024 Chartboost, Inc.
- *
+ * Copyright 2022-2025 Chartboost, Inc.
+ * 
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -30,6 +30,12 @@ repositories {
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/private-chartboost-ads/") {
+        credentials {
+            username = System.getenv("JFROG_USER")
+            password = System.getenv("JFROG_PASS")
+        }
+    }
     maven("https://cboost.jfrog.io/artifactory/chartboost-core/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-ads/")
@@ -43,7 +49,7 @@ android {
         minSdk = 21
         targetSdk = 34
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.9.7.0.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.9.9.1.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         consumerProguardFiles("proguard-rules.pro")
@@ -90,7 +96,8 @@ dependencies {
     // For external usage, please use the following production dependencies.
     // You may choose a different release version.
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "remoteImplementation"("com.chartboost:chartboost-sdk:9.7.0")
+    val chartboostSdkVersion = System.getenv("CB_SDK_VERSION") ?: "9.9.1"
+    "remoteImplementation"("com.chartboost:chartboost-sdk:$chartboostSdkVersion")
 
     "candidateImplementation"(project(":ChartboostMediation"))
     "candidateImplementation"(project(":ChartboostMonetization"))
