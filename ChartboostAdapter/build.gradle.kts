@@ -30,6 +30,12 @@ repositories {
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/private-chartboost-ads/") {
+        credentials {
+            username = System.getenv("JFROG_USER")
+            password = System.getenv("JFROG_PASS")
+        }
+    }
     maven("https://cboost.jfrog.io/artifactory/chartboost-core/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-ads/")
@@ -85,15 +91,16 @@ android {
 
 dependencies {
     "localImplementation"(project(":ChartboostMediation"))
+    "localImplementation"(project(":ChartboostMonetization"))
 
-    // For external usage, please use the following production dependency.
+    // For external usage, please use the following production dependencies.
     // You may choose a different release version.
     "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
+    val chartboostSdkVersion = System.getenv("CB_SDK_VERSION") ?: "9.9.1"
+    "remoteImplementation"("com.chartboost:chartboost-sdk:$chartboostSdkVersion")
 
-    // For external usage, please use the following production dependency.
-    // You may choose a different release version.
-    implementation("com.chartboost:chartboost-sdk:9.9.1")
+    "candidateImplementation"(project(":ChartboostMediation"))
+    "candidateImplementation"(project(":ChartboostMonetization"))
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
