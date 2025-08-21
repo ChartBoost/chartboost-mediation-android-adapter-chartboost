@@ -93,7 +93,7 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    implementation("com.chartboost:chartboost-sdk:9.9.2")
+    implementation("com.chartboost:chartboost-sdk:9.9.3")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
