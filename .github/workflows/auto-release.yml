@@ -14,19 +14,35 @@ on:
         required: false
         type: string
 
+env:
+  BUILD_GRADLE_PATH: "ChartboostAdapter/build.gradle.kts"
+
 jobs:
   auto-release:
-    # Only run if:
-    # 1. Manual trigger (workflow_dispatch), OR
-    # 2. PR was merged (not just closed) AND branch name looks like a version number
+    # Only run if manual trigger OR PR was merged (not just closed)
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.merged == true &&
-       contains(github.event.pull_request.head.ref, '.') &&
-       !contains(github.event.pull_request.head.ref, '/'))
+      github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    concurrency:
+      group: auto-release-${{ github.repository }}
+      cancel-in-progress: false
     steps:
+      - name: Validate branch name
+        id: validate
+        if: github.event_name == 'pull_request'
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          if [[ $BRANCH =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH' matches version pattern"
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "Branch '$BRANCH' does not match version pattern - skipping release"
+          fi
+
       - name: Trigger auto-release
+        if: github.event_name == 'workflow_dispatch' || steps.validate.outputs.valid == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GITHUBSERVICETOKEN }}
@@ -37,5 +53,12 @@ jobs:
               "repository": "${{ github.repository }}",
               "token": "${{ secrets.ACCESS_TOKEN }}",
               "version": "${{ github.event.inputs.version || '' }}",
-              "build_gradle_path": "ChartboostAdapter/build.gradle.kts"
+              "build_gradle_path": "${{ env.BUILD_GRADLE_PATH }}"
             }
+
+      - name: Log release trigger
+        if: github.event_name == 'workflow_dispatch' || steps.validate.outputs.valid == 'true'
+        run: |
+          echo "## Release Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "- Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ github.event.inputs.version || 'from build.gradle.kts' }}" >> $GITHUB_STEP_SUMMARY
