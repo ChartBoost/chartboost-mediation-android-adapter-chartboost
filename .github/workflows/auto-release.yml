@@ -31,8 +31,9 @@ jobs:
       - name: Validate branch name
         id: validate
         if: github.event_name == 'pull_request'
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
           if [[ $BRANCH =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
             echo "valid=true" >> $GITHUB_OUTPUT
             echo "Branch '$BRANCH' matches version pattern"
@@ -58,7 +59,9 @@ jobs:
 
       - name: Log release trigger
         if: github.event_name == 'workflow_dispatch' || steps.validate.outputs.valid == 'true'
+        env:
+          VERSION: ${{ github.event.inputs.version || 'from build.gradle.kts' }}
         run: |
           echo "## Release Triggered" >> $GITHUB_STEP_SUMMARY
           echo "- Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Version: ${{ github.event.inputs.version || 'from build.gradle.kts' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: $VERSION" >> $GITHUB_STEP_SUMMARY
