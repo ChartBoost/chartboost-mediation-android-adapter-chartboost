@@ -39,4 +39,11 @@ object ChartboostAdapterConfiguration : PartnerAdapterConfiguration {
      * "Adapter" represents this adapter’s version (starting with 0), which resets to 0 when the partner SDK’s version changes. This must be 1 digit.
      */
     override val adapterVersion = BuildConfig.CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION
+
+    /**
+     * The consent key under which a CMP reports LGPD consent, for as long as Core defines no
+     * formal LGPD consent key of its own. Mirrors iOS's
+     * `ChartboostAdapterConfiguration.lgpdConsentKey`.
+     */
+    const val LGPD_CONSENT_KEY = "CHB_LGPD_CONSENT"
 }

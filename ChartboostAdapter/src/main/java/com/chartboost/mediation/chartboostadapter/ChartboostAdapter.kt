@@ -401,7 +401,7 @@ class ChartboostAdapter : PartnerAdapter {
         }
 
         // LGPD is not yet a formal Chartboost Core consent key.
-        consents[LGPD.LGPD_STANDARD]?.let {
+        consents[ChartboostAdapterConfiguration.LGPD_CONSENT_KEY]?.let {
             when (it) {
                 ConsentValues.GRANTED -> {
                     PartnerLogController.log(CUSTOM, "LGPD consent granted")
