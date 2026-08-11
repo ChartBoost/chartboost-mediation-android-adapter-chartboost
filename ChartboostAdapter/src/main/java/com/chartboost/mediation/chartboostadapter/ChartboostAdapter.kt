@@ -85,6 +85,7 @@ import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.Custom
 import com.chartboost.sdk.privacy.model.GDPR
+import com.chartboost.sdk.privacy.model.LGPD
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -395,6 +396,14 @@ class ChartboostAdapter : PartnerAdapter {
                 else -> PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
 
             }
+        }
+
+        // LGPD is not yet a formal Chartboost Core consent key; the value is a plain Boolean
+        // (allowBehavioralTargeting) rather than the GRANTED/DENIED convention used above.
+        consents[LGPD.LGPD_STANDARD]?.let {
+            it.toBooleanStrictOrNull()?.let { allowBehavioralTargeting ->
+                Chartboost.addDataUseConsent(context, LGPD(allowBehavioralTargeting))
+            } ?: PartnerLogController.log(CUSTOM, "Unable to process $it for LGPD")
         }
     }
 
