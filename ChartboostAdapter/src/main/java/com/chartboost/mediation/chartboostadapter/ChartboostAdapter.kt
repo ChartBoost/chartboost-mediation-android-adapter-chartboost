@@ -393,8 +393,10 @@ class ChartboostAdapter : PartnerAdapter {
                     PartnerLogController.log(USP_CONSENT_DENIED)
                     Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
                 }
-                else -> PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
-
+                else -> {
+                    PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
+                    Chartboost.clearDataUseConsent(context, CCPA.CCPA_STANDARD)
+                }
             }
         }
 
@@ -414,7 +416,7 @@ class ChartboostAdapter : PartnerAdapter {
                     Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
                 }
             }
-        } ?: Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
+        }
     }
 
     /**
