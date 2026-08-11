@@ -402,12 +402,15 @@ class ChartboostAdapter : PartnerAdapter {
         consents[LGPD.LGPD_STANDARD]?.let {
             when (it) {
                 ConsentValues.GRANTED -> {
+                    PartnerLogController.log(CUSTOM, "LGPD consent granted")
                     Chartboost.addDataUseConsent(context, LGPD(true))
                 }
                 ConsentValues.DENIED -> {
+                    PartnerLogController.log(CUSTOM, "LGPD consent denied")
                     Chartboost.addDataUseConsent(context, LGPD(false))
                 }
                 else -> {
+                    PartnerLogController.log(CUSTOM, "Unable to process $it for LGPD")
                     Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
                 }
             }
