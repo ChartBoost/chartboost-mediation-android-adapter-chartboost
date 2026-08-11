@@ -404,7 +404,7 @@ class ChartboostAdapter : PartnerAdapter {
             it.toBooleanStrictOrNull()?.let { allowBehavioralTargeting ->
                 Chartboost.addDataUseConsent(context, LGPD(allowBehavioralTargeting))
             } ?: PartnerLogController.log(CUSTOM, "Unable to process $it for LGPD")
-        }
+        } ?: Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
     }
 
     /**
