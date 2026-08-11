@@ -398,12 +398,19 @@ class ChartboostAdapter : PartnerAdapter {
             }
         }
 
-        // LGPD is not yet a formal Chartboost Core consent key; the value is a plain Boolean
-        // (allowBehavioralTargeting) rather than the GRANTED/DENIED convention used above.
+        // LGPD is not yet a formal Chartboost Core consent key.
         consents[LGPD.LGPD_STANDARD]?.let {
-            it.toBooleanStrictOrNull()?.let { allowBehavioralTargeting ->
-                Chartboost.addDataUseConsent(context, LGPD(allowBehavioralTargeting))
-            } ?: PartnerLogController.log(CUSTOM, "Unable to process $it for LGPD")
+            when (it) {
+                ConsentValues.GRANTED -> {
+                    Chartboost.addDataUseConsent(context, LGPD(true))
+                }
+                ConsentValues.DENIED -> {
+                    Chartboost.addDataUseConsent(context, LGPD(false))
+                }
+                else -> {
+                    Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
+                }
+            }
         } ?: Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
     }
 
