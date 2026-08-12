@@ -85,6 +85,7 @@ import com.chartboost.sdk.privacy.model.CCPA
 import com.chartboost.sdk.privacy.model.COPPA
 import com.chartboost.sdk.privacy.model.Custom
 import com.chartboost.sdk.privacy.model.GDPR
+import com.chartboost.sdk.privacy.model.LGPD
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -392,8 +393,28 @@ class ChartboostAdapter : PartnerAdapter {
                     PartnerLogController.log(USP_CONSENT_DENIED)
                     Chartboost.addDataUseConsent(context, CCPA(CCPA.CCPA_CONSENT.OPT_OUT_SALE))
                 }
-                else -> PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
+                else -> {
+                    PartnerLogController.log(CUSTOM, "Unable to process $it CCPA_OPT_IN")
+                    Chartboost.clearDataUseConsent(context, CCPA.CCPA_STANDARD)
+                }
+            }
+        }
 
+        // LGPD is not yet a formal Chartboost Core consent key.
+        consents[ChartboostAdapterConfiguration.LGPD_CONSENT_KEY]?.let {
+            when (it) {
+                ConsentValues.GRANTED -> {
+                    PartnerLogController.log(CUSTOM, "LGPD consent granted")
+                    Chartboost.addDataUseConsent(context, LGPD(true))
+                }
+                ConsentValues.DENIED -> {
+                    PartnerLogController.log(CUSTOM, "LGPD consent denied")
+                    Chartboost.addDataUseConsent(context, LGPD(false))
+                }
+                else -> {
+                    PartnerLogController.log(CUSTOM, "Unable to process $it for LGPD")
+                    Chartboost.clearDataUseConsent(context, LGPD.LGPD_STANDARD)
+                }
             }
         }
     }
