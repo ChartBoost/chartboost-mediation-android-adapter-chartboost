@@ -11,6 +11,9 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.9.14.1.0
+- This version of the adapter has been certified with Chartboost SDK 9.14.1.
+
 ### 5.9.14.0.0
 - This version of the adapter has been certified with Chartboost SDK 9.14.0.
 - Minimum Kotlin version bumped to 2.3.0.
