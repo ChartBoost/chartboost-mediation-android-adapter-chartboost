@@ -1,6 +1,6 @@
 /*
  * Copyright 2022-2026 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -30,6 +30,12 @@ repositories {
             password = System.getenv("JFROG_PASS")
         }
     }
+    maven("https://cboost.jfrog.io/artifactory/private-chartboost-ads/") {
+        credentials {
+            username = System.getenv("JFROG_USER")
+            password = System.getenv("JFROG_PASS")
+        }
+    }
     maven("https://cboost.jfrog.io/artifactory/chartboost-core/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-mediation/")
     maven("https://cboost.jfrog.io/artifactory/chartboost-ads/")
@@ -43,7 +49,7 @@ android {
         minSdk = 21
         targetSdk = 34
         // If you touch the following line, don't forget to update scripts/get_rc_version.zsh
-        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.9.14.1.0"
+        android.defaultConfig.versionName = System.getenv("VERSION_OVERRIDE") ?: "5.10.0.0.0"
         buildConfigField("String", "CHARTBOOST_MEDIATION_CHARTBOOST_ADAPTER_VERSION", "\"${android.defaultConfig.versionName}\"")
 
         consumerProguardFiles("proguard-rules.pro")
@@ -53,7 +59,10 @@ android {
 
     flavorDimensions += "location"
     productFlavors {
-        create("local")
+        create("local") {
+            // The local Chartboost Mediation project declares 23, and unit tests merge its manifest.
+            minSdk = 23
+        }
         create("remote")
         create("candidate")
     }
@@ -71,6 +80,12 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 
     compileOptions {
@@ -93,6 +108,7 @@ kotlin {
 
 dependencies {
     "localImplementation"(project(":ChartboostMediation"))
+    "localImplementation"(project(":ChartboostMonetization"))
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
@@ -101,11 +117,17 @@ dependencies {
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
-    implementation("com.chartboost:chartboost-sdk:9.14.1")
+    // The release candidate workflow sets CB_SDK_VERSION to build against a staged Chartboost SDK.
+    val chartboostSdkVersion = System.getenv("CB_SDK_VERSION") ?: "10.0.0"
+    "remoteImplementation"("com.chartboost:chartboost-sdk:$chartboostSdkVersion")
+    "candidateImplementation"("com.chartboost:chartboost-sdk:$chartboostSdkVersion")
 
     // Partner SDK Dependencies
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }
 
 artifactory {

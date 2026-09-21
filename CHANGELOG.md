@@ -11,6 +11,16 @@ All official releases can be found on this repository's [releases page](https://
 
 ## Mediation 5
 
+### 5.10.0.0.0
+- Update the adapter to use the new Chartboost SDK 10 APIs.
+- GDPR and LGPD consents are forwarded through the `CHB_GDPR_CONSENT` and `CHB_LGPD_CONSENT` default SharedPreferences keys the Chartboost SDK reads. They are written only when Chartboost Core reports a change and persist until the next change, so a publisher may also set those keys directly.
+- The IAB TCF, GPP and US Privacy strings are no longer forwarded. Chartboost SDK 10 reads them from the default SharedPreferences file, where consent management platforms store them. Consents held only in memory by Chartboost Core do not reach it, so without such a platform the publisher must write `IABTCF_TCString`, `IABGPP_HDR_GppString`, `IABGPP_GppSID` and `IABUSPrivacy_String` there directly.
+- The Chartboost Core `ccpa_opt_in` consent is no longer forwarded, since Chartboost SDK 10 only reads the IAB US Privacy string.
+- Adaptive banners are requested with the given width and height limits. An adaptive request without a height limit uses the standard banner height, or the leaderboard height from 728dp wide.
+- The underage flag from the Chartboost Mediation configuration is applied before the Chartboost SDK starts.
+- Fullscreen ads are destroyed once they close or expire, releasing their resources.
+- This version of the adapter has been certified with Chartboost SDK 10.0.0.
+
 ### 5.9.14.1.0
 - This version of the adapter has been certified with Chartboost SDK 9.14.1.
 

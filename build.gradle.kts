@@ -26,5 +26,6 @@ task<Delete>("clean") {
 
 task("ci") {
     dependsOn("clean")
+    dependsOn(":ChartboostAdapter:testRemoteDebugUnitTest")
     dependsOn(":ChartboostAdapter:assembleRemote")
 }

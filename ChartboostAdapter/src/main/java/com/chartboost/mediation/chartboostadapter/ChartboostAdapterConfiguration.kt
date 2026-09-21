@@ -1,6 +1,6 @@
 /*
  * Copyright 2024-2026 Chartboost, Inc.
- * 
+ *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
  */
@@ -9,6 +9,7 @@ package com.chartboost.mediation.chartboostadapter
 
 import com.chartboost.chartboostmediationsdk.domain.PartnerAdapterConfiguration
 import com.chartboost.sdk.Chartboost
+import com.chartboost.sdk.privacy.ChartboostSharedPreferencesKeys
 
 object ChartboostAdapterConfiguration : PartnerAdapterConfiguration {
     /**
@@ -42,8 +43,8 @@ object ChartboostAdapterConfiguration : PartnerAdapterConfiguration {
 
     /**
      * The consent key under which a CMP reports LGPD consent, for as long as Core defines no
-     * formal LGPD consent key of its own. Mirrors iOS's
-     * `ChartboostAdapterConfiguration.lgpdConsentKey`.
+     * formal LGPD consent key of its own. It is the same name the Chartboost SDK reads the
+     * forwarded consent under, so one key serves both sides.
      */
-    const val LGPD_CONSENT_KEY = "CHB_LGPD_CONSENT"
+    const val LGPD_CONSENT_KEY = ChartboostSharedPreferencesKeys.LGPD_CONSENT
 }
