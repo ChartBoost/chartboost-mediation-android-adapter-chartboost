@@ -517,7 +517,7 @@ class ChartboostAdapter : PartnerAdapter {
             )
         val bannerAdView =
             result.ad ?: run {
-                PartnerLogController.log(LOAD_FAILED, "${result.error}")
+                PartnerLogController.log(LOAD_FAILED, "loadId=${result.loadId}, ${result.error}")
                 return Result.failure(
                     ChartboostMediationAdException(result.error?.toLoadError() ?: ChartboostMediationError.LoadError.Unknown),
                 )
@@ -546,11 +546,14 @@ class ChartboostAdapter : PartnerAdapter {
             }
         if (showError != null) {
             bannerAdView.destroy()
-            PartnerLogController.log(LOAD_FAILED, "$showError")
+            PartnerLogController.log(LOAD_FAILED, "loadId=${bannerAdView.loadId}, $showError")
             return Result.failure(ChartboostMediationAdException(showError.toLoadError()))
         }
 
-        PartnerLogController.log(LOAD_SUCCEEDED)
+        PartnerLogController.log(
+            LOAD_SUCCEEDED,
+            "loadId=${bannerAdView.loadId}, price=${bannerAdView.price}, currency=${bannerAdView.currency}",
+        )
         return Result.success(partnerAd)
     }
 
@@ -577,7 +580,7 @@ class ChartboostAdapter : PartnerAdapter {
             )
         val fullscreenAd =
             result.ad ?: run {
-                PartnerLogController.log(LOAD_FAILED, "${result.error}")
+                PartnerLogController.log(LOAD_FAILED, "loadId=${result.loadId}, ${result.error}")
                 return Result.failure(
                     ChartboostMediationAdException(result.error?.toLoadError() ?: ChartboostMediationError.LoadError.Unknown),
                 )
@@ -591,7 +594,10 @@ class ChartboostAdapter : PartnerAdapter {
             )
         fullscreenAd.callback = FullscreenAdCallbackBridge(partnerAd, partnerAdListener)
 
-        PartnerLogController.log(LOAD_SUCCEEDED)
+        PartnerLogController.log(
+            LOAD_SUCCEEDED,
+            "loadId=${fullscreenAd.loadId}, price=${fullscreenAd.price}, currency=${fullscreenAd.currency}",
+        )
         return Result.success(partnerAd)
     }
 
