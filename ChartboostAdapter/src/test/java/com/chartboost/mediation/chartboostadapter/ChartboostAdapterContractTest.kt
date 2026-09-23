@@ -133,6 +133,16 @@ class ChartboostAdapterContractTest {
         }
 
     @Test
+    fun `loading a banner with an out of range size fails with an invalid banner size`() {
+        // The SDK checks the size before anything else, so the failure is reachable before it starts.
+        val request = loadRequest(PartnerAdFormats.BANNER, bannerSize = ChartboostMediationBannerSize.bannerSize(49))
+
+        val result = awaitWithMainLooper { adapter.load(context, request, listener) }
+
+        assertEquals(ChartboostMediationError.LoadError.InvalidBannerSize, result.mediationError())
+    }
+
+    @Test
     fun `a waterfall load reaches the SDK without an ad markup`() {
         // Chartboost Mediation reports waterfall loads as an empty markup. Passed on as is, the SDK would reject it as InvalidAdm.
         for (format in listOf(PartnerAdFormats.BANNER, PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED)) {

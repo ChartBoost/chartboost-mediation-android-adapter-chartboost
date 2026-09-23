@@ -11,9 +11,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
-import android.util.Size
 import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize
+import com.chartboost.chartboostmediationsdk.domain.BannerType
 import com.chartboost.chartboostmediationsdk.domain.BannerTypes
 import com.chartboost.chartboostmediationsdk.domain.ChartboostMediationAdException
 import com.chartboost.chartboostmediationsdk.domain.ChartboostMediationError
@@ -126,6 +126,7 @@ class ChartboostAdapter : PartnerAdapter {
                 is ChartboostError.Load.RateLimited -> ChartboostMediationError.LoadError.RateLimited
                 is ChartboostError.Load.TimedOut -> ChartboostMediationError.LoadError.AdRequestTimeout
                 is ChartboostError.Load.NoStorage -> ChartboostMediationError.LoadError.OutOfStorage
+                is ChartboostError.Load.InvalidBannerSize -> ChartboostMediationError.LoadError.InvalidBannerSize
                 is ChartboostError.Show.NoAd -> ChartboostMediationError.LoadError.NoBannerView
                 is ChartboostError.Show.AdExpired -> ChartboostMediationError.LoadError.NoFill
                 is ChartboostError.Show.NotInitialized -> ChartboostMediationError.LoadError.PartnerNotInitialized
@@ -165,23 +166,30 @@ class ChartboostAdapter : PartnerAdapter {
 
         /**
          * Convert a Chartboost Mediation banner size to the Chartboost SDK banner size to request.
-         * Chartboost Mediation reports an adaptive request without a height limit as height 0, while
-         * the Chartboost SDK requests and renders the given height verbatim, so the height of the
-         * conventional anchored banner for that width is used instead.
+         * The size is passed through: the Chartboost SDK validates it on load and, for an adaptive
+         * request, resolves the loaded size from the ad response. Both SDKs read a height of 0 as
+         * no height limit.
          *
          * @return The matching fixed size, an adaptive size for adaptive requests, or STANDARD when no fixed size matches.
          */
         internal fun ChartboostMediationBannerSize.toChartboostBannerSize(): BannerSize =
             if (isAdaptive) {
-                val maxHeight =
-                    when {
-                        height > 0 -> height
-                        width >= BannerSize.Fixed.LEADERBOARD.width -> BannerSize.Fixed.LEADERBOARD.height
-                        else -> BannerSize.Fixed.STANDARD.height
-                    }
-                BannerSize.adaptive(width, maxHeight)
+                BannerSize.adaptive(width, height)
             } else {
                 BannerSize.Fixed.entries.firstOrNull { it.width == width && it.height == height } ?: BannerSize.Fixed.STANDARD
+            }
+
+        /**
+         * Convert the fit type of a loaded Chartboost SDK banner to the Chartboost Mediation banner
+         * type. FIXED means a fixed request or a creative shown at its own size, so it is a fixed
+         * banner. ASPECT and FILL size the creative to the loaded ad size, so they are adaptive banners.
+         *
+         * @return [BannerTypes.BANNER] or [BannerTypes.ADAPTIVE_BANNER].
+         */
+        internal fun BannerAdView.FitType.toBannerType(): BannerType =
+            when (this) {
+                BannerAdView.FitType.FIXED -> BannerTypes.BANNER
+                BannerAdView.FitType.ASPECT, BannerAdView.FitType.FILL -> BannerTypes.ADAPTIVE_BANNER
             }
 
         /**
@@ -509,13 +517,12 @@ class ChartboostAdapter : PartnerAdapter {
                 return Result.failure(ChartboostMediationAdException(ChartboostMediationError.LoadError.InvalidBannerSize))
             }
 
-        val chartboostSize = bannerSize.toChartboostBannerSize()
         val result =
             BannerAdView.load(
                 context,
                 BannerAdLoadRequest(
                     adUnit = request.partnerPlacement,
-                    size = chartboostSize,
+                    size = bannerSize.toChartboostBannerSize(),
                     adm = request.bidResponse,
                     mediation = setMediation(),
                     keywords = request.keywords.ifEmpty { null },
@@ -534,11 +541,8 @@ class ChartboostAdapter : PartnerAdapter {
                 ad = bannerAdView,
                 details = emptyMap(),
                 request = request,
-                partnerBannerSize =
-                    PartnerBannerSize(
-                        Size(chartboostSize.width, chartboostSize.height),
-                        if (bannerSize.isAdaptive) BannerTypes.ADAPTIVE_BANNER else BannerTypes.BANNER,
-                    ),
+                // The Chartboost SDK resolves the loaded size from the requested size and the ad response.
+                partnerBannerSize = PartnerBannerSize(bannerAdView.adSize, bannerAdView.fitType.toBannerType()),
             )
         bannerAdView.callback = BannerAdViewCallbackBridge(partnerAd, partnerAdListener)
 

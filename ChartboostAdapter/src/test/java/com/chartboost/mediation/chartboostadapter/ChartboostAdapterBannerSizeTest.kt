@@ -8,7 +8,10 @@
 package com.chartboost.mediation.chartboostadapter
 
 import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize
+import com.chartboost.chartboostmediationsdk.domain.BannerTypes
+import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.toBannerType
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.toChartboostBannerSize
+import com.chartboost.sdk.ads.BannerAdView
 import com.chartboost.sdk.ads.BannerSize
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -36,10 +39,23 @@ class ChartboostAdapterBannerSizeTest {
     }
 
     @Test
-    fun `an adaptive request without a height uses the anchored banner height for its width`() {
-        assertEquals(BannerSize.adaptive(360, 50), ChartboostMediationBannerSize.bannerSize(360).toChartboostBannerSize())
-        assertEquals(BannerSize.adaptive(727, 50), ChartboostMediationBannerSize.bannerSize(727).toChartboostBannerSize())
-        assertEquals(BannerSize.adaptive(728, 90), ChartboostMediationBannerSize.bannerSize(728).toChartboostBannerSize())
-        assertEquals(BannerSize.adaptive(1024, 90), ChartboostMediationBannerSize.bannerSize(1024).toChartboostBannerSize())
+    fun `an adaptive request without a height limit keeps the flexible height`() {
+        val size = ChartboostMediationBannerSize.bannerSize(360).toChartboostBannerSize()
+
+        assertEquals(BannerSize.adaptive(360), size)
+        assertEquals(0, size.height)
+        assertEquals(BannerSize.adaptive(728), ChartboostMediationBannerSize.bannerSize(728).toChartboostBannerSize())
+    }
+
+    @Test
+    fun `an out of range adaptive request is passed through for the Chartboost SDK to reject`() {
+        assertEquals(BannerSize.adaptive(49, 1801), ChartboostMediationBannerSize.bannerSize(49, 1801).toChartboostBannerSize())
+    }
+
+    @Test
+    fun `the fit type of the loaded ad sets the partner banner type`() {
+        assertEquals(BannerTypes.BANNER, BannerAdView.FitType.FIXED.toBannerType())
+        assertEquals(BannerTypes.ADAPTIVE_BANNER, BannerAdView.FitType.ASPECT.toBannerType())
+        assertEquals(BannerTypes.ADAPTIVE_BANNER, BannerAdView.FitType.FILL.toBannerType())
     }
 }

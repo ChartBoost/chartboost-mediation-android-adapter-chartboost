@@ -52,6 +52,7 @@ class ChartboostAdapterErrorMappingTest {
                 ChartboostError.Load.RateLimited to ChartboostMediationError.LoadError.RateLimited,
                 ChartboostError.Load.TimedOut("slow", null) to ChartboostMediationError.LoadError.AdRequestTimeout,
                 ChartboostError.Load.NoStorage to ChartboostMediationError.LoadError.OutOfStorage,
+                ChartboostError.Load.InvalidBannerSize to ChartboostMediationError.LoadError.InvalidBannerSize,
                 ChartboostError.Load.Unknown("boom", null) to ChartboostMediationError.LoadError.Unknown,
                 ChartboostError.Load.VastError("vast", null) to ChartboostMediationError.LoadError.Unknown,
                 ChartboostError.Show.NoAd to ChartboostMediationError.LoadError.NoBannerView,
