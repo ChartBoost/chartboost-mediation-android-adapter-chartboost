@@ -67,8 +67,10 @@ import com.chartboost.sdk.ads.BannerAdLoadRequest
 import com.chartboost.sdk.ads.BannerAdView
 import com.chartboost.sdk.ads.BannerSize
 import com.chartboost.sdk.ads.FullscreenAd
-import com.chartboost.sdk.ads.FullscreenAdBidTokenRequest
-import com.chartboost.sdk.ads.FullscreenAdLoadRequest
+import com.chartboost.sdk.ads.InterstitialAdBidTokenRequest
+import com.chartboost.sdk.ads.InterstitialAdLoadRequest
+import com.chartboost.sdk.ads.RewardedAdBidTokenRequest
+import com.chartboost.sdk.ads.RewardedAdLoadRequest
 import com.chartboost.sdk.callbacks.BannerAdViewCallback
 import com.chartboost.sdk.callbacks.FullscreenAdCallback
 import com.chartboost.sdk.events.ChartboostError
@@ -307,8 +309,12 @@ class ChartboostAdapter : PartnerAdapter {
                     )
                 }
 
-                PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED -> {
-                    FullscreenAd.fetchBidToken(FullscreenAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation()))
+                PartnerAdFormats.INTERSTITIAL -> {
+                    FullscreenAd.fetchBidToken(InterstitialAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation()))
+                }
+
+                PartnerAdFormats.REWARDED -> {
+                    FullscreenAd.fetchBidToken(RewardedAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation()))
                 }
 
                 else -> {
@@ -569,15 +575,14 @@ class ChartboostAdapter : PartnerAdapter {
         request: PartnerAdLoadRequest,
         partnerAdListener: PartnerAdListener,
     ): Result<PartnerAd> {
+        val adm = request.bidResponse
+        val keywords = request.keywords.ifEmpty { null }
         val result =
-            FullscreenAd.load(
-                FullscreenAdLoadRequest(
-                    adUnit = request.partnerPlacement,
-                    adm = request.bidResponse,
-                    mediation = setMediation(),
-                    keywords = request.keywords.ifEmpty { null },
-                ),
-            )
+            if (request.format == PartnerAdFormats.REWARDED) {
+                FullscreenAd.load(RewardedAdLoadRequest(request.partnerPlacement, adm, setMediation(), keywords))
+            } else {
+                FullscreenAd.load(InterstitialAdLoadRequest(request.partnerPlacement, adm, setMediation(), keywords))
+            }
         val fullscreenAd =
             result.ad ?: run {
                 PartnerLogController.log(LOAD_FAILED, "loadId=${result.loadId}, ${result.error}")

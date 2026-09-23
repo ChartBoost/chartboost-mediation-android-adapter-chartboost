@@ -20,6 +20,7 @@ All official releases can be found on this repository's [releases page](https://
 - The underage flag from the Chartboost Mediation configuration is applied before the Chartboost SDK starts.
 - Load logs carry the load id the Chartboost SDK reports, and a successful load also logs the ad's price and currency.
 - Fullscreen ads are destroyed once they close or expire, releasing their resources.
+- Rewarded placements load and fetch bid tokens through the Chartboost SDK rewarded requests, so they load as rewarded ads and grant rewards.
 - This version of the adapter has been certified with Chartboost SDK 10.0.0.
 
 ### 5.9.14.1.0
