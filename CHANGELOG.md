@@ -18,6 +18,7 @@ All official releases can be found on this repository's [releases page](https://
 - The Chartboost Core `ccpa_opt_in` consent is no longer forwarded, since Chartboost SDK 10 only reads the IAB US Privacy string.
 - Adaptive banners are requested with the given width and height limits, a height of 0 meaning no height limit. The Chartboost SDK validates the size on load, so an adaptive size with a width outside 50 to 1800 dp, or a height from 1 to 49 dp or above 1800 dp, now fails with an invalid banner size error where it used to load, and resolves the loaded size from the ad response, which the adapter reports as the partner banner size. The banner type follows the fit type of the loaded ad: fixed is a banner, aspect or fill is an adaptive banner.
 - The underage flag from the Chartboost Mediation configuration is applied before the Chartboost SDK starts.
+- The adapter no longer sets the Chartboost SDK log level to `ALL` on setup, so the level set through `Chartboost.setLoggingLevel` is kept.
 - Load logs carry the load id the Chartboost SDK reports, and a successful load also logs the ad's price and currency.
 - Fullscreen ads are destroyed once they close or expire, releasing their resources.
 - Rewarded placements load and fetch bid tokens through the Chartboost SDK rewarded requests, so they load as rewarded ads and grant rewards.

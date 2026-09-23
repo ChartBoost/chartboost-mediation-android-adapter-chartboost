@@ -60,7 +60,6 @@ import com.chartboost.core.consent.ConsentValue
 import com.chartboost.core.consent.ConsentValues
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.toShowError
 import com.chartboost.sdk.Chartboost
-import com.chartboost.sdk.LoggingLevel
 import com.chartboost.sdk.Mediation
 import com.chartboost.sdk.ads.BannerAdBidTokenRequest
 import com.chartboost.sdk.ads.BannerAdLoadRequest
@@ -256,7 +255,6 @@ class ChartboostAdapter : PartnerAdapter {
                 // The Chartboost SDK keeps the underage flag in memory only and reads it from start onwards.
                 partnerConfiguration.isUserUnderage?.let { setIsUserUnderage(context, it) }
 
-                Chartboost.setLoggingLevel(LoggingLevel.ALL)
                 Chartboost.startWithAppId(context.applicationContext, appId, appSignature) { error ->
                     error?.let {
                         PartnerLogController.log(SETUP_FAILED, "${it.exception ?: it.code}")
