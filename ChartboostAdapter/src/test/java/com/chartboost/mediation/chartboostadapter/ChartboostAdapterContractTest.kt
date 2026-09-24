@@ -92,13 +92,15 @@ class ChartboostAdapterContractTest {
         }
 
     @Test
-    fun `a bid token request before the SDK starts reports no token`() {
-        for (format in listOf(PartnerAdFormats.BANNER, PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED)) {
-            val result = awaitWithMainLooper { adapter.fetchBidderInformation(context, preBidRequest(format)) }
+    fun `a bid token request before the SDK starts reports no token`() =
+        runBlocking {
+            // The SDK answers on the calling thread, so no main looper drain is needed.
+            for (format in listOf(PartnerAdFormats.BANNER, PartnerAdFormats.INTERSTITIAL, PartnerAdFormats.REWARDED)) {
+                val result = adapter.fetchBidderInformation(context, preBidRequest(format))
 
-            assertEquals("format $format", emptyMap<String, String>(), result.getOrThrow())
+                assertEquals("format $format", emptyMap<String, String>(), result.getOrThrow())
+            }
         }
-    }
 
     @Test
     fun `a banner bid token request without a size fails with an invalid argument`() =

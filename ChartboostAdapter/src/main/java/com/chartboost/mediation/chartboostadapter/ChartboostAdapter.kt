@@ -302,7 +302,7 @@ class ChartboostAdapter : PartnerAdapter {
     ): Result<Map<String, String>> {
         PartnerLogController.log(BIDDER_INFO_FETCH_STARTED)
 
-        val token =
+        val bidTokenRequest =
             when (request.format) {
                 PartnerAdFormats.BANNER -> {
                     val bannerSize =
@@ -310,17 +310,15 @@ class ChartboostAdapter : PartnerAdapter {
                             PartnerLogController.log(BIDDER_INFO_FETCH_FAILED, "Missing banner size.")
                             return Result.failure(ChartboostMediationAdException(ChartboostMediationError.PrebidError.InvalidArgument))
                         }
-                    BannerAdView.fetchBidToken(
-                        BannerAdBidTokenRequest(bannerSize.toChartboostBannerSize(), request.keywords.ifEmpty { null }, setMediation()),
-                    )
+                    BannerAdBidTokenRequest(bannerSize.toChartboostBannerSize(), request.keywords.ifEmpty { null }, setMediation())
                 }
 
                 PartnerAdFormats.INTERSTITIAL -> {
-                    FullscreenAd.fetchBidToken(InterstitialAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation()))
+                    InterstitialAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation())
                 }
 
                 PartnerAdFormats.REWARDED -> {
-                    FullscreenAd.fetchBidToken(RewardedAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation()))
+                    RewardedAdBidTokenRequest(request.keywords.ifEmpty { null }, setMediation())
                 }
 
                 else -> {
@@ -328,6 +326,7 @@ class ChartboostAdapter : PartnerAdapter {
                     return Result.failure(ChartboostMediationAdException(ChartboostMediationError.PrebidError.UnsupportedAdFormat))
                 }
             }
+        val token = Chartboost.fetchBidToken(bidTokenRequest)
 
         // No token is not a failure to Chartboost Mediation, the partner just sits out the auction.
         return if (token.isNullOrEmpty()) {
