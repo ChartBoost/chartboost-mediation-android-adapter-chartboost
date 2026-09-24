@@ -23,6 +23,7 @@ All official releases can be found on this repository's [releases page](https://
 - Fullscreen ads are destroyed once they close or expire, releasing their resources.
 - Rewarded placements load and fetch bid tokens through the Chartboost SDK rewarded requests, so they load as rewarded ads and grant rewards.
 - Bid tokens are fetched with the one synchronous `Chartboost.fetchBidToken` call, passing the interstitial, rewarded or banner request built from the ad format.
+- The new banner will appear, modal presented, modal dismissed and app left callbacks are logged and not forwarded, since Chartboost Mediation has no matching events.
 - This version of the adapter has been certified with Chartboost SDK 10.0.0.
 
 ### 5.9.14.1.0

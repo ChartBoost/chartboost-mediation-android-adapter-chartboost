@@ -730,7 +730,8 @@ private class FullscreenAdCallbackBridge(
 }
 
 /**
- * Forwards Chartboost banner ad events to Chartboost Mediation.
+ * Forwards Chartboost banner ad events to Chartboost Mediation. The will appear, modal and app
+ * left events are only logged, since [PartnerAdListener] has no matching events.
  *
  * @param partnerAd The [PartnerAd] the events belong to.
  * @param listener A [PartnerAdListener] to notify Chartboost Mediation of ad events.
@@ -739,6 +740,10 @@ private class BannerAdViewCallbackBridge(
     private val partnerAd: PartnerAd,
     private val listener: PartnerAdListener,
 ) : BannerAdViewCallback {
+    override fun onAdWillAppear(ad: BannerAdView) {
+        PartnerLogController.log(CUSTOM, "onAdWillAppear ignored, Chartboost Mediation has no matching event")
+    }
+
     override fun onAdClicked(ad: BannerAdView) {
         PartnerLogController.log(DID_CLICK)
         listener.onPartnerAdClicked(partnerAd)
@@ -752,5 +757,17 @@ private class BannerAdViewCallbackBridge(
     override fun onImpressionRecorded(ad: BannerAdView) {
         PartnerLogController.log(DID_TRACK_IMPRESSION)
         listener.onPartnerAdImpression(partnerAd)
+    }
+
+    override fun onModalPresented(ad: BannerAdView) {
+        PartnerLogController.log(CUSTOM, "onModalPresented ignored, Chartboost Mediation has no matching event")
+    }
+
+    override fun onModalDismissed(ad: BannerAdView) {
+        PartnerLogController.log(CUSTOM, "onModalDismissed ignored, Chartboost Mediation has no matching event")
+    }
+
+    override fun onAppLeft(ad: BannerAdView) {
+        PartnerLogController.log(CUSTOM, "onAppLeft ignored, Chartboost Mediation has no matching event")
     }
 }
