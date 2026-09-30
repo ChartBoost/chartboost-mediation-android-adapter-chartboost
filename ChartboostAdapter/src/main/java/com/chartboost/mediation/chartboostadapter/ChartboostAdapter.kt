@@ -536,20 +536,7 @@ class ChartboostAdapter : PartnerAdapter {
                 partnerBannerSize = PartnerBannerSize(bannerAdView.adSize, bannerAdView.fitType.toBannerType()),
             )
         bannerAdView.callback = BannerAdViewCallbackBridge(partnerAd, partnerAdListener)
-
-        // A cancelled or crashed load never reaches invalidate, so the view is released here instead.
-        val showError =
-            try {
-                bannerAdView.show().error
-            } catch (throwable: Throwable) {
-                bannerAdView.destroy()
-                throw throwable
-            }
-        if (showError != null) {
-            bannerAdView.destroy()
-            PartnerLogController.log(LOAD_FAILED, "loadId=${bannerAdView.loadId}, $showError")
-            return Result.failure(ChartboostMediationAdException(showError.toLoadError()))
-        }
+        // No show call: the view renders on its own once Chartboost Mediation attaches it, visible, to a window.
 
         PartnerLogController.log(
             LOAD_SUCCEEDED,
