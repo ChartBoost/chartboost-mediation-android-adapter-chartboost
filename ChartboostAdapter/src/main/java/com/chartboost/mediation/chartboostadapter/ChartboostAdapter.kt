@@ -386,7 +386,7 @@ class ChartboostAdapter : PartnerAdapter {
 
         return when (partnerAd.request.format) {
             PartnerAdFormats.BANNER -> {
-                // Banner ads are rendered as part of the load.
+                // A banner renders itself once Chartboost Mediation attaches its view, so there is nothing to show here.
                 PartnerLogController.log(SHOW_SUCCEEDED)
                 Result.success(partnerAd)
             }
@@ -488,8 +488,8 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Attempt to load a Chartboost banner ad. The banner is rendered as part of the load, since
-     * Chartboost Mediation only attaches the returned view.
+     * Attempt to load a Chartboost banner ad. The returned view renders itself once Chartboost
+     * Mediation attaches it to a window, so the adapter never shows it.
      *
      * @param context The current [Context].
      * @param request An [PartnerAdLoadRequest] instance containing relevant data for the current ad load call.
