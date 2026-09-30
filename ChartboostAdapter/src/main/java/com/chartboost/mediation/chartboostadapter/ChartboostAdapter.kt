@@ -438,8 +438,8 @@ class ChartboostAdapter : PartnerAdapter {
     }
 
     /**
-     * Forward the GDPR and LGPD consents to Chartboost through the default SharedPreferences keys
-     * the Chartboost SDK reads. The IAB TCF, GPP and US Privacy strings need no forwarding, the
+     * Forward the GDPR consent to Chartboost through the default SharedPreferences key the
+     * Chartboost SDK reads. The IAB TCF, GPP and US Privacy strings need no forwarding, the
      * Chartboost SDK reads them from the same file exactly as the consent management platform writes them.
      */
     override fun setConsents(
@@ -464,12 +464,6 @@ class ChartboostAdapter : PartnerAdapter {
                 },
             )
             preferences.writeConsent(ChartboostSharedPreferencesKeys.GDPR_CONSENT, consent)
-        }
-
-        if (ChartboostAdapterConfiguration.LGPD_CONSENT_KEY in modifiedKeys) {
-            val consent = consents[ChartboostAdapterConfiguration.LGPD_CONSENT_KEY]
-            PartnerLogController.log(CUSTOM, "LGPD consent ${consent ?: "unknown"}")
-            preferences.writeConsent(ChartboostSharedPreferencesKeys.LGPD_CONSENT, consent)
         }
     }
 

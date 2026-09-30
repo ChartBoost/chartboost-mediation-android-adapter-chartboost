@@ -138,53 +138,6 @@ class ChartboostAdapterConsentTest {
     }
 
     @Test
-    fun `LGPD consent is stored under the SDK key`() {
-        adapter.setConsents(
-            context,
-            mapOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY to ConsentValues.GRANTED),
-            setOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY),
-        )
-        assertTrue(preferences.getBoolean(ChartboostSharedPreferencesKeys.LGPD_CONSENT, false))
-
-        adapter.setConsents(
-            context,
-            mapOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY to ConsentValues.DENIED),
-            setOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY),
-        )
-        assertFalse(preferences.getBoolean(ChartboostSharedPreferencesKeys.LGPD_CONSENT, true))
-
-        adapter.setConsents(
-            context,
-            mapOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY to ConsentValues.DOES_NOT_APPLY),
-            setOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY),
-        )
-        assertFalse(preferences.contains(ChartboostSharedPreferencesKeys.LGPD_CONSENT))
-    }
-
-    @Test
-    fun `a removed LGPD consent clears the stored value`() {
-        preferences.edit().putBoolean(ChartboostSharedPreferencesKeys.LGPD_CONSENT, true).commit()
-
-        adapter.setConsents(context, emptyMap(), setOf(ChartboostAdapterConfiguration.LGPD_CONSENT_KEY))
-
-        assertFalse(preferences.contains(ChartboostSharedPreferencesKeys.LGPD_CONSENT))
-    }
-
-    @Test
-    fun `an unmodified LGPD consent leaves the stored value alone`() {
-        preferences.edit().putBoolean(ChartboostSharedPreferencesKeys.LGPD_CONSENT, false).commit()
-
-        adapter.setConsents(
-            context,
-            mapOf(ConsentKeys.GDPR_CONSENT_GIVEN to ConsentValues.GRANTED),
-            setOf(ConsentKeys.GDPR_CONSENT_GIVEN),
-        )
-
-        assertTrue(preferences.contains(ChartboostSharedPreferencesKeys.LGPD_CONSENT))
-        assertFalse(preferences.getBoolean(ChartboostSharedPreferencesKeys.LGPD_CONSENT, true))
-    }
-
-    @Test
     fun `IAB strings are not copied since the SDK reads them from the CMP`() {
         adapter.setConsents(
             context,
