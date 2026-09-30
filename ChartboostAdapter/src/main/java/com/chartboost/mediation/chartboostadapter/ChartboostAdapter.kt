@@ -106,8 +106,8 @@ class ChartboostAdapter : PartnerAdapter {
             }
 
         /**
-         * Convert a Chartboost SDK error reported by a load to a [ChartboostMediationError]. Banner
-         * loads also render, so the show errors that render can report are mapped here as well.
+         * Convert a Chartboost SDK error reported by a load to a [ChartboostMediationError]. A load
+         * reports load and connectivity errors only, a banner renders on its own once attached.
          *
          * @return The corresponding [ChartboostMediationError].
          */
@@ -126,12 +126,6 @@ class ChartboostAdapter : PartnerAdapter {
                 is ChartboostError.Load.TimedOut -> ChartboostMediationError.LoadError.AdRequestTimeout
                 is ChartboostError.Load.NoStorage -> ChartboostMediationError.LoadError.OutOfStorage
                 is ChartboostError.Load.InvalidBannerSize -> ChartboostMediationError.LoadError.InvalidBannerSize
-                is ChartboostError.Show.NoAd -> ChartboostMediationError.LoadError.NoBannerView
-                is ChartboostError.Show.AdExpired -> ChartboostMediationError.LoadError.NoFill
-                is ChartboostError.Show.NotInitialized -> ChartboostMediationError.LoadError.PartnerNotInitialized
-                is ChartboostError.Show.Disabled, is ChartboostError.Show.AdInvalidated -> ChartboostMediationError.LoadError.Aborted
-                is ChartboostError.Show.NoContext -> ChartboostMediationError.LoadError.ActivityNotFound
-                is ChartboostError.Show.TimedOut -> ChartboostMediationError.LoadError.AdRequestTimeout
                 is ChartboostError.Connectivity.NoInternet -> ChartboostMediationError.LoadError.NoConnectivity
                 is ChartboostError.Connectivity.ServerError -> ChartboostMediationError.LoadError.ServerError
                 is ChartboostError.Connectivity -> ChartboostMediationError.LoadError.NetworkingError
