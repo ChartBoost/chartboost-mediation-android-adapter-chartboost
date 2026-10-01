@@ -68,15 +68,12 @@ class ChartboostAdapterContractTest {
         }
 
     @Test
-    fun `setting up without an app id or signature fails with invalid credentials`() =
+    fun `setting up without an app id fails with invalid credentials`() =
         runBlocking {
             for (credentials in listOf(
-                mapOf("app_id" to "app"),
+                emptyMap(),
                 mapOf("app_signature" to "sig"),
-                mapOf(
-                    "app_id" to " ",
-                    "app_signature" to "sig",
-                ),
+                mapOf("app_id" to " "),
             )) {
                 val configuration =
                     PartnerConfiguration(
@@ -88,6 +85,32 @@ class ChartboostAdapterContractTest {
                 val result = adapter.setUp(context, configuration)
 
                 assertEquals("$credentials", ChartboostMediationError.InitializationError.InvalidCredentials, result.mediationError())
+            }
+        }
+
+    @Test
+    fun `setting up with an app id starts the SDK with that app id alone`() =
+        runBlocking {
+            for (credentials in listOf(
+                mapOf("app_id" to "an-app-id"),
+                mapOf("app_id" to "an-app-id", "app_signature" to "sig"),
+            )) {
+                var startedWith: String? = null
+                adapter.startSdk = { _, appId, callback ->
+                    startedWith = appId
+                    callback.onStartCompleted(null)
+                }
+                val configuration =
+                    PartnerConfiguration(
+                        credentials = buildJsonObject { credentials.forEach { (key, value) -> put(key, value) } },
+                        consents = emptyMap(),
+                        isUserUnderage = null,
+                    )
+
+                val result = adapter.setUp(context, configuration)
+
+                assertTrue("$credentials", result.isSuccess)
+                assertEquals("$credentials", "an-app-id", startedWith)
             }
         }
 

@@ -72,6 +72,7 @@ import com.chartboost.sdk.ads.RewardedAdBidTokenRequest
 import com.chartboost.sdk.ads.RewardedAdLoadRequest
 import com.chartboost.sdk.callbacks.BannerAdViewCallback
 import com.chartboost.sdk.callbacks.FullscreenAdCallback
+import com.chartboost.sdk.callbacks.StartCallback
 import com.chartboost.sdk.events.ChartboostError
 import com.chartboost.sdk.events.StartError
 import com.chartboost.sdk.privacy.ChartboostSharedPreferencesKeys
@@ -198,11 +199,6 @@ class ChartboostAdapter : PartnerAdapter {
         private const val APPLICATION_ID_KEY = "app_id"
 
         /**
-         * Key for parsing the Chartboost SDK application signature.
-         */
-        private const val APPLICATION_SIGNATURE_KEY = "app_signature"
-
-        /**
          * Key under which the bid token is reported to Chartboost Mediation.
          */
         private const val BUYER_UID_KEY = "buyeruid"
@@ -212,6 +208,11 @@ class ChartboostAdapter : PartnerAdapter {
      * The Chartboost adapter configuration.
      */
     override var configuration: PartnerAdapterConfiguration = ChartboostAdapterConfiguration
+
+    /**
+     * Starts the Chartboost SDK. Tests replace it so they do not start the real SDK.
+     */
+    internal var startSdk: (Context, String, StartCallback) -> Unit = Chartboost::startWithAppId
 
     /**
      * Initialize the Chartboost SDK so that it is ready to request ads.
@@ -228,8 +229,7 @@ class ChartboostAdapter : PartnerAdapter {
         withContext(IO) {
             PartnerLogController.log(SETUP_STARTED)
 
-            val credentials = partnerConfiguration.credentials
-            val (appId, appSignature) = extractPartnerConfigs(credentials)
+            val appId = extractPartnerConfig(APPLICATION_ID_KEY, partnerConfiguration.credentials)
 
             suspendCancellableCoroutine { continuation ->
                 fun resumeOnce(result: Result<Map<String, Any>>) {
@@ -238,8 +238,8 @@ class ChartboostAdapter : PartnerAdapter {
                     }
                 }
 
-                if (appId.isNullOrEmpty() || appSignature.isNullOrEmpty()) {
-                    PartnerLogController.log(SETUP_FAILED, "Missing app ID or app signature.")
+                if (appId.isNullOrEmpty()) {
+                    PartnerLogController.log(SETUP_FAILED, "Missing app ID.")
                     resumeOnce(
                         Result.failure(ChartboostMediationAdException(ChartboostMediationError.InitializationError.InvalidCredentials)),
                     )
@@ -249,7 +249,7 @@ class ChartboostAdapter : PartnerAdapter {
                 // The Chartboost SDK keeps the underage flag in memory only and reads it from start onwards.
                 partnerConfiguration.isUserUnderage?.let { setIsUserUnderage(context, it) }
 
-                Chartboost.startWithAppId(context.applicationContext, appId, appSignature) { error ->
+                startSdk(context.applicationContext, appId) { error ->
                     error?.let {
                         PartnerLogController.log(SETUP_FAILED, "${it.exception ?: it.code}")
                         resumeOnce(Result.failure(ChartboostMediationAdException(it.code.toInitializationError())))
@@ -622,20 +622,6 @@ class ChartboostAdapter : PartnerAdapter {
      * Let's have a method to avoid repetition.
      */
     private fun setMediation(): Mediation = Mediation("Chartboost", ChartboostMediationSdk.getVersion(), configuration.adapterVersion)
-
-    /**
-     * Extract the Chartboost partner configurations from the given credentials.
-     *
-     * @param credentials The credentials to extract the Chartboost partner configurations from.
-     *
-     * @return A Pair containing the extracted Chartboost app ID and app signature.
-     */
-    private fun extractPartnerConfigs(credentials: JsonObject): Pair<String?, String?> {
-        val appId = extractPartnerConfig(APPLICATION_ID_KEY, credentials)
-        val appSignature = extractPartnerConfig(APPLICATION_SIGNATURE_KEY, credentials)
-
-        return Pair(appId, appSignature)
-    }
 
     /**
      * Extract a partner configuration value from the given credentials.
