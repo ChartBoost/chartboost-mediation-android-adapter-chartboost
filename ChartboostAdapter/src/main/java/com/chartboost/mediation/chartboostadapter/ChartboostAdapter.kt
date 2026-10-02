@@ -11,6 +11,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
+import android.util.Size
 import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize
 import com.chartboost.chartboostmediationsdk.domain.BannerType
@@ -174,6 +175,22 @@ class ChartboostAdapter : PartnerAdapter {
             }
 
         /**
+         * The load failure for an ad larger than the size the publisher asked for. Only an adaptive
+         * request is checked, a fixed banner always displays at the requested size, and only while
+         * the publisher discards oversized ads. A requested height of 0 is a flexible height, which
+         * no ad height exceeds.
+         *
+         * @return [ChartboostMediationError.LoadError.AdTooLarge] when either dimension exceeds the
+         * requested one, null when the ad fits or is not checked.
+         */
+        internal fun PartnerAdLoadRequest.oversizeError(adSize: Size): ChartboostMediationError? {
+            val requested = requestedBannerSize ?: return null
+            if (!requested.isAdaptive || !ChartboostMediationSdk.isDiscardOversizedAdsEnabled()) return null
+            val isLarger = adSize.width > requested.width || (requested.height > 0 && adSize.height > requested.height)
+            return if (isLarger) ChartboostMediationError.LoadError.AdTooLarge else null
+        }
+
+        /**
          * Convert the fit type of a loaded Chartboost SDK banner to the Chartboost Mediation banner
          * type. FIXED means a fixed request or a creative shown at its own size, so it is a fixed
          * banner. ASPECT and FILL size the creative to the loaded ad size, so they are adaptive banners.
@@ -192,6 +209,16 @@ class ChartboostAdapter : PartnerAdapter {
          */
         private val PartnerAdLoadRequest.bidResponse: String?
             get() = adm?.takeIf { it.isNotEmpty() }
+
+        /**
+         * Key Chartboost Mediation reads the loaded banner width from, in density-independent pixels.
+         */
+        private const val BANNER_WIDTH_DIPS_KEY = "banner_width_dips"
+
+        /**
+         * Key Chartboost Mediation reads the loaded banner height from, in density-independent pixels.
+         */
+        private const val BANNER_HEIGHT_DIPS_KEY = "banner_height_dips"
 
         /**
          * Key for parsing the Chartboost SDK application ID.
@@ -521,13 +548,31 @@ class ChartboostAdapter : PartnerAdapter {
                 )
             }
 
+        // The Chartboost SDK resolves the loaded size from the requested size and the ad response,
+        // so an ad larger than the publisher asked for is only known here. It renders itself once
+        // attached, so it is destroyed now and the load fails: Chartboost Mediation never shows it.
+        val adSize = bannerAdView.adSize
+        request.oversizeError(adSize)?.let { error ->
+            PartnerLogController.log(
+                LOAD_FAILED,
+                "loadId=${bannerAdView.loadId}, ad size (${adSize.width}, ${adSize.height}) is larger than the requested " +
+                    "size (${request.requestedBannerSize?.width}, ${request.requestedBannerSize?.height})",
+            )
+            bannerAdView.destroy()
+            return Result.failure(ChartboostMediationAdException(error))
+        }
+
         val partnerAd =
             PartnerAd(
                 ad = bannerAdView,
-                details = emptyMap(),
+                // Chartboost Mediation reads the loaded size from here to discard an oversized ad.
+                details =
+                    mapOf(
+                        BANNER_WIDTH_DIPS_KEY to "${adSize.width}",
+                        BANNER_HEIGHT_DIPS_KEY to "${adSize.height}",
+                    ),
                 request = request,
-                // The Chartboost SDK resolves the loaded size from the requested size and the ad response.
-                partnerBannerSize = PartnerBannerSize(bannerAdView.adSize, bannerAdView.fitType.toBannerType()),
+                partnerBannerSize = PartnerBannerSize(adSize, bannerAdView.fitType.toBannerType()),
             )
         bannerAdView.callback = BannerAdViewCallbackBridge(partnerAd, partnerAdListener)
         // No show call: the view renders on its own once Chartboost Mediation attaches it, visible, to a window.

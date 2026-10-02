@@ -25,6 +25,7 @@ All official releases can be found on this repository's [releases page](https://
 - Rewarded placements load and fetch bid tokens through the Chartboost SDK rewarded requests, so they load as rewarded ads and grant rewards.
 - Bid tokens are fetched with the one synchronous `Chartboost.fetchBidToken` call, passing the interstitial, rewarded or banner request built from the ad format.
 - Banners render on their own once Chartboost Mediation attaches them to a window, so the adapter no longer shows a banner after it loads.
+- An adaptive banner whose loaded size is larger than the size the publisher asked for fails the load with an ad too large error and is destroyed, so it never renders. The loaded size is also reported to Chartboost Mediation. Both apply only while the publisher has oversized ad discarding turned on.
 - The new banner will appear, modal presented, modal dismissed and app left callbacks are logged and not forwarded, since Chartboost Mediation has no matching events.
 - This version of the adapter has been certified with Chartboost SDK 10.0.0.
 

@@ -10,6 +10,8 @@ package com.chartboost.mediation.chartboostadapter
 import android.app.Activity
 import android.content.Context
 import android.os.Looper
+import android.util.Size
+import com.chartboost.chartboostmediationsdk.ChartboostMediationSdk
 import com.chartboost.chartboostmediationsdk.ad.ChartboostMediationBannerAdView.ChartboostMediationBannerSize
 import com.chartboost.chartboostmediationsdk.domain.AdInteractionListener
 import com.chartboost.chartboostmediationsdk.domain.ChartboostMediationAdException
@@ -21,6 +23,7 @@ import com.chartboost.chartboostmediationsdk.domain.PartnerAdListener
 import com.chartboost.chartboostmediationsdk.domain.PartnerAdLoadRequest
 import com.chartboost.chartboostmediationsdk.domain.PartnerAdPreBidRequest
 import com.chartboost.chartboostmediationsdk.domain.PartnerConfiguration
+import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.oversizeError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -28,7 +31,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -40,8 +45,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * The adapter paths that answer before the Chartboost SDK is started. The SDK is never started
- * here, so its load entry points answer with NotInitialized once they accept the request.
+ * The adapter paths that answer before the Chartboost SDK is started, including the oversized ad
+ * decision. The SDK is never started here, so its load entry points answer with NotInitialized
+ * once they accept the request.
  */
 @RunWith(RobolectricTestRunner::class)
 class ChartboostAdapterContractTest {
@@ -66,6 +72,11 @@ class ChartboostAdapterContractTest {
 
             override fun onPartnerAdExpired(partnerAd: PartnerAd) = Unit
         }
+
+    @After
+    fun tearDown() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(false)
+    }
 
     @Test
     fun `setting up without an app id fails with invalid credentials`() =
@@ -234,6 +245,55 @@ class ChartboostAdapterContractTest {
             assertEquals(ChartboostMediationError.InvalidateError.WrongResourceType, result.mediationError())
         }
 
+    @Test
+    fun `an ad larger than the requested adaptive size is too large`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+        val request = loadRequest(PartnerAdFormats.BANNER, requestedBannerSize = ChartboostMediationBannerSize.bannerSize(320, 50))
+
+        for (adSize in listOf(Size(321, 50), Size(320, 51), Size(728, 90))) {
+            assertEquals("$adSize", ChartboostMediationError.LoadError.AdTooLarge, request.oversizeError(adSize))
+        }
+    }
+
+    @Test
+    fun `an ad within the requested adaptive size is not too large`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+        val request = loadRequest(PartnerAdFormats.BANNER, requestedBannerSize = ChartboostMediationBannerSize.bannerSize(320, 50))
+
+        for (adSize in listOf(Size(320, 50), Size(300, 50), Size(320, 25))) {
+            assertNull("$adSize", request.oversizeError(adSize))
+        }
+    }
+
+    @Test
+    fun `a requested height of 0 accepts any ad height`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+        val request = loadRequest(PartnerAdFormats.BANNER, requestedBannerSize = ChartboostMediationBannerSize.bannerSize(320))
+
+        assertNull(request.oversizeError(Size(320, 600)))
+        assertEquals(ChartboostMediationError.LoadError.AdTooLarge, request.oversizeError(Size(321, 600)))
+    }
+
+    @Test
+    fun `an ad is never too large while discarding is off`() {
+        val request = loadRequest(PartnerAdFormats.BANNER, requestedBannerSize = ChartboostMediationBannerSize.bannerSize(320, 50))
+
+        assertNull(request.oversizeError(Size(728, 90)))
+    }
+
+    @Test
+    fun `an ad is never too large for a fixed or missing request`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+
+        assertNull(loadRequest(PartnerAdFormats.BANNER, requestedBannerSize = null).oversizeError(Size(728, 90)))
+        assertNull(
+            loadRequest(
+                PartnerAdFormats.BANNER,
+                requestedBannerSize = ChartboostMediationBannerSize.STANDARD,
+            ).oversizeError(Size(728, 90)),
+        )
+    }
+
     /**
      * Runs [block] off the test thread while this thread drains the main looper, since the SDK
      * posts its results to the main thread and Robolectric only runs those when idled.
@@ -275,6 +335,7 @@ class ChartboostAdapterContractTest {
         format: PartnerAdFormat,
         bannerSize: ChartboostMediationBannerSize? = ChartboostMediationBannerSize.STANDARD,
         adm: String? = null,
+        requestedBannerSize: ChartboostMediationBannerSize? = null,
     ) = PartnerAdLoadRequest(
         partnerId = ChartboostAdapterConfiguration.partnerId,
         mediationPlacement = "placement",
@@ -300,5 +361,6 @@ class ChartboostAdapterContractTest {
                 override fun onExpired(partnerAd: PartnerAd) = Unit
             },
         keywords = emptyMap(),
+        requestedBannerSize = requestedBannerSize,
     )
 }
