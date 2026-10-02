@@ -24,6 +24,14 @@ import com.chartboost.chartboostmediationsdk.domain.PartnerAdLoadRequest
 import com.chartboost.chartboostmediationsdk.domain.PartnerAdPreBidRequest
 import com.chartboost.chartboostmediationsdk.domain.PartnerConfiguration
 import com.chartboost.mediation.chartboostadapter.ChartboostAdapter.Companion.oversizeError
+import com.chartboost.sdk.ads.BannerAdLoadResult
+import com.chartboost.sdk.ads.BannerAdView
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -34,6 +42,7 @@ import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -46,8 +55,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The adapter paths that answer before the Chartboost SDK is started, including the oversized ad
- * decision. The SDK is never started here, so its load entry points answer with NotInitialized
- * once they accept the request.
+ * decision and the banner load path that acts on it. The SDK is never started here, so its load
+ * entry points answer with NotInitialized once they accept the request, except where a test fakes
+ * the banner load to hand back a loaded view.
  */
 @RunWith(RobolectricTestRunner::class)
 class ChartboostAdapterContractTest {
@@ -76,6 +86,7 @@ class ChartboostAdapterContractTest {
     @After
     fun tearDown() {
         ChartboostMediationSdk.setShouldDiscardOversizedAds(false)
+        unmockkAll()
     }
 
     @Test
@@ -292,6 +303,57 @@ class ChartboostAdapterContractTest {
                 requestedBannerSize = ChartboostMediationBannerSize.STANDARD,
             ).oversizeError(Size(728, 90)),
         )
+    }
+
+    @Test
+    fun `an oversized loaded banner is destroyed and fails the load before the callback bridge`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+        val bannerAdView = fakeBannerLoad(Size(728, 90))
+
+        val result = runBlocking { adapter.load(context, adaptiveBannerRequest(), listener) }
+
+        assertEquals(ChartboostMediationError.LoadError.AdTooLarge, result.mediationError())
+        verify(exactly = 1) { bannerAdView.destroy() }
+        verify(exactly = 0) { bannerAdView.callback = any() }
+    }
+
+    @Test
+    fun `a loaded banner within the requested size is kept and takes the callback bridge`() {
+        ChartboostMediationSdk.setShouldDiscardOversizedAds(true)
+        // Smaller than the requested 320x50, so the reported size cannot be the requested one.
+        val bannerAdView = fakeBannerLoad(Size(300, 40))
+
+        val result = runBlocking { adapter.load(context, adaptiveBannerRequest(), listener) }
+
+        val partnerAd = result.getOrThrow()
+        assertSame(bannerAdView, partnerAd.ad)
+        // Chartboost Mediation reads the loaded size from here to discard an oversized ad itself.
+        assertEquals(mapOf("banner_width_dips" to "300", "banner_height_dips" to "40"), partnerAd.details)
+        verify(exactly = 0) { bannerAdView.destroy() }
+        verify(exactly = 1) { bannerAdView.callback = any() }
+    }
+
+    /**
+     * Fakes the Chartboost SDK banner load so it answers with a view of [loadedSize]. Both the view
+     * and the load result have internal constructors, so neither can be built here.
+     *
+     * @return The view the faked load hands back.
+     */
+    private fun fakeBannerLoad(loadedSize: Size): BannerAdView {
+        val bannerAdView =
+            mockk<BannerAdView>(relaxed = true) {
+                every { adSize } returns loadedSize
+                every { fitType } returns BannerAdView.FitType.FILL
+            }
+        mockkObject(BannerAdView.Companion)
+        coEvery { BannerAdView.load(any(), any()) } returns
+            mockk<BannerAdLoadResult>(relaxed = true) { every { ad } returns bannerAdView }
+        return bannerAdView
+    }
+
+    private fun adaptiveBannerRequest(): PartnerAdLoadRequest {
+        val requested = ChartboostMediationBannerSize.bannerSize(320, 50)
+        return loadRequest(PartnerAdFormats.BANNER, bannerSize = requested, requestedBannerSize = requested)
     }
 
     /**

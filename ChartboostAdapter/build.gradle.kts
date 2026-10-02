@@ -128,6 +128,8 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")
+    // Fakes the Chartboost SDK banner load: BannerAdView and its load result have internal constructors.
+    testImplementation("io.mockk:mockk:1.13.11")
 }
 
 artifactory {
