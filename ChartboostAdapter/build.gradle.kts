@@ -110,10 +110,9 @@ dependencies {
     "localImplementation"(project(":ChartboostMediation"))
     "localImplementation"(project(":ChartboostMonetization"))
 
-    // For external usage, please use the following production dependency.
-    // You may choose a different release version.
-    "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
-    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:5.0.0")
+    // A private nightly until a Mediation release has requestedBannerSize and LoadError.AdTooLarge.
+    "remoteImplementation"("com.chartboost:chartboost-mediation-sdk:2026.11.16.1794853595-nightly")
+    "candidateImplementation"("com.chartboost:chartboost-mediation-sdk:2026.11.16.1794853595-nightly")
 
     // For external usage, please use the following production dependency.
     // You may choose a different release version.
