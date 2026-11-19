@@ -20,7 +20,7 @@ All official releases can be found on this repository's [releases page](https://
 - The underage flag from the Chartboost Mediation configuration is applied before the Chartboost SDK starts.
 - The Chartboost SDK no longer takes an app signature. The adapter starts it with the app ID only and ignores an `app_signature` credential, so a setup with only an `app_id` now succeeds where it used to fail with invalid credentials.
 - The adapter no longer sets the Chartboost SDK log level to `ALL` on setup, so the level set through `Chartboost.setLoggingLevel` is kept.
-- Load logs carry the load id the Chartboost SDK reports, and a successful load also logs the ad's price and currency.
+- Load logs carry the load id the Chartboost SDK reports, and a successful load also logs the ad's earnings and currency.
 - Fullscreen ads are destroyed once they close or expire, releasing their resources.
 - Rewarded placements load and fetch bid tokens through the Chartboost SDK rewarded requests, so they load as rewarded ads and grant rewards.
 - Bid tokens are fetched with the one synchronous `Chartboost.fetchBidToken` call, passing the interstitial, rewarded or banner request built from the ad format.

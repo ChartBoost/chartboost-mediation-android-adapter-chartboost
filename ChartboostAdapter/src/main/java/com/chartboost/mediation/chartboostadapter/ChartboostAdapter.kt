@@ -579,7 +579,7 @@ class ChartboostAdapter : PartnerAdapter {
 
         PartnerLogController.log(
             LOAD_SUCCEEDED,
-            "loadId=${bannerAdView.loadId}, price=${bannerAdView.price}, currency=${bannerAdView.currency}",
+            "loadId=${bannerAdView.loadId}, earnings=${bannerAdView.earnings}, currency=${bannerAdView.currency}",
         )
         return Result.success(partnerAd)
     }
@@ -622,7 +622,7 @@ class ChartboostAdapter : PartnerAdapter {
 
         PartnerLogController.log(
             LOAD_SUCCEEDED,
-            "loadId=${fullscreenAd.loadId}, price=${fullscreenAd.price}, currency=${fullscreenAd.currency}",
+            "loadId=${fullscreenAd.loadId}, earnings=${fullscreenAd.earnings}, currency=${fullscreenAd.currency}",
         )
         return Result.success(partnerAd)
     }
